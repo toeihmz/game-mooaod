@@ -1,0 +1,2325 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>XO MooAodCompany - 4 Players (Multi-Mode & Online Edition)</title>
+    
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Canvas Confetti -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <!-- PeerJS CDN for WebRTC Online Multiplayer -->
+    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+    
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&family=VT323&display=swap');
+        
+        * {
+            font-family: 'Kanit', sans-serif;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+            border-radius: 4px !important;
+        }
+
+        .font-pixel {
+            font-family: 'VT323', monospace;
+        }
+
+        /* --- MINECRAFT DAY THEME (DEFAULT) --- */
+        body {
+            background-color: #5B8731;
+            background-image: 
+                linear-gradient(rgba(0,0,0,0.06) 2px, transparent 2px),
+                linear-gradient(90deg, rgba(0,0,0,0.06) 2px, transparent 2px),
+                linear-gradient(180deg, #70A039 0%, #4D7328 100%);
+            background-size: 16px 16px, 16px 16px, 100% 100%;
+            color: #1E1E1E;
+            min-height: 100vh;
+            transition: background 0.3s ease, color 0.3s ease;
+        }
+
+        .mc-card {
+            background: #D7C49E;
+            border: 3px solid #5C3A21;
+            box-shadow: inset -2px -2px 0px 0px #A89269, inset 2px 2px 0px 0px #FFF3D6, 0 4px 0px #3B2414;
+        }
+
+        .mc-panel {
+            background: #C4B088;
+            border: 3px solid #4A2E19;
+            box-shadow: inset -2px -2px 0px 0px #9C8863, inset 2px 2px 0px 0px #E2D3B3;
+        }
+
+        .mc-button-green {
+            background: #557A2B;
+            border: 3px solid #2F4518;
+            box-shadow: inset -2px -2px 0px 0px #3B561E, inset 2px 2px 0px 0px #80B342, 0 4px 0px #1E2D10;
+            color: #FFFFFF;
+            cursor: pointer;
+        }
+
+        .mc-button-green:hover {
+            background: #628C32;
+            transform: translateY(-1px);
+        }
+
+        .mc-button-green:active {
+            transform: translateY(2px);
+            box-shadow: inset -1px -1px 0px 0px #3B561E, inset 1px 1px 0px 0px #80B342;
+        }
+
+        .mc-button-blue {
+            background: #3B7EA1;
+            border: 3px solid #1D4B63;
+            box-shadow: inset -2px -2px 0px 0px #2A5A74, inset 2px 2px 0px 0px #6BB3DC, 0 4px 0px #113040;
+            color: #FFFFFF;
+            cursor: pointer;
+        }
+
+        .mc-button-blue:hover {
+            background: #4792BA;
+            transform: translateY(-1px);
+        }
+
+        .mc-button-brown {
+            background: #8A5A36;
+            border: 3px solid #3B2414;
+            box-shadow: inset -2px -2px 0px 0px #5C3A21, inset 2px 2px 0px 0px #C48E66, 0 4px 0px #23150B;
+            color: #FFFFFF;
+            cursor: pointer;
+        }
+
+        .mc-button-brown:hover {
+            background: #9C673F;
+        }
+
+        .grid-cell {
+            background: #E0D3B8;
+            border: 2px solid #8B6F47;
+            box-shadow: inset 2px 2px 0px #FFF6E5, inset -2px -2px 0px #B59B73;
+            transition: all 0.1s ease;
+        }
+
+        .grid-cell:hover:not(.occupied) {
+            background-color: #FFF2D6;
+            border-color: #557A2B;
+            transform: scale(1.02);
+            cursor: pointer;
+            box-shadow: inset 2px 2px 0px #FFFFFF, inset -2px -2px 0px #A37F4C;
+        }
+
+        .active-turn-card {
+            border-color: #557A2B !important;
+            background: #E8F5D6 !important;
+            box-shadow: inset 2px 2px 0px #FFFFFF, inset -2px -2px 0px #88B358, 0 0 0 3px #FCA800 !important;
+        }
+
+        .winning-cell {
+            animation: mc-win-blink 0.8s infinite alternate steps(2);
+            background: #FCA800 !important;
+            border-color: #3B2414 !important;
+            color: #FFFFFF !important;
+            z-index: 10;
+        }
+
+        @keyframes mc-win-blink {
+            0% { background: #FCA800; transform: scale(0.96); }
+            100% { background: #40D3CA; transform: scale(1.04); }
+        }
+
+        input, select {
+            background-color: #E8DFCE !important;
+            border: 2px solid #5C3A21 !important;
+            color: #1E1E1E !important;
+        }
+        input:focus, select:focus {
+            border-color: #557A2B !important;
+            outline: none !important;
+        }
+
+        /* --- MINECRAFT NIGHT THEME --- */
+        body.night-mode {
+            background-color: #181B26;
+            background-image: 
+                radial-gradient(#3B435D 1px, transparent 1px),
+                linear-gradient(180deg, #0F121C 0%, #1A2030 100%);
+            background-size: 20px 20px, 100% 100%;
+            color: #E0E6ED;
+        }
+
+        body.night-mode .mc-card {
+            background: #232733;
+            border: 3px solid #434B61;
+            box-shadow: inset -2px -2px 0px 0px #141720, inset 2px 2px 0px 0px #383F52, 0 4px 0px #090B10;
+            color: #E0E6ED;
+        }
+
+        body.night-mode .mc-panel {
+            background: #1C202B;
+            border: 3px solid #363D52;
+            box-shadow: inset -2px -2px 0px 0px #10131A, inset 2px 2px 0px 0px #2A3042;
+        }
+
+        body.night-mode .grid-cell {
+            background: #2C3244;
+            border: 2px solid #4A546E;
+            box-shadow: inset 2px 2px 0px #3D465E, inset -2px -2px 0px #1B1F2B;
+            color: #FFFFFF;
+        }
+
+        body.night-mode .grid-cell:hover:not(.occupied) {
+            background-color: #384158;
+            border-color: #40D3CA;
+        }
+
+        body.night-mode .active-turn-card {
+            border-color: #40D3CA !important;
+            background: #1E333A !important;
+            box-shadow: inset 2px 2px 0px #2D525C, inset -2px -2px 0px #101D21, 0 0 0 3px #40D3CA !important;
+        }
+
+        body.night-mode input, body.night-mode select {
+            background-color: #232733 !important;
+            border: 2px solid #434B61 !important;
+            color: #E0E6ED !important;
+        }
+    </style>
+</head>
+<body class="text-slate-800 min-h-screen flex flex-col justify-between antialiased relative">
+
+    <header class="w-full bg-[#5C3A21] border-b-4 border-[#3B2414] px-4 py-2.5 sticky top-0 z-30 shadow-md">
+        <div class="max-w-4xl mx-auto flex items-center justify-between gap-3">
+            <div class="flex items-center gap-2.5 cursor-pointer" onclick="goToModeSelection()">
+                <div class="w-9 h-9 rounded bg-[#557A2B] border-2 border-[#80B342] flex items-center justify-center text-white text-lg shadow-sm">
+                    ⛏️
+                </div>
+                <div>
+                    <h1 class="text-base sm:text-lg font-bold text-white tracking-tight flex items-center gap-2">
+                        <span>XO MooAodCompany</span>
+                        <span id="header-mode-tag" class="text-[11px] font-normal px-2 py-0.5 bg-[#3B2414] text-[#FCA800] border border-[#8A5A36]">MODE SELECT</span>
+                    </h1>
+                </div>
+            </div>
+            
+            <div class="flex items-center gap-2">
+                <button id="theme-btn" onclick="toggleDayNight()" class="px-2.5 py-1.5 mc-button-brown text-xs font-semibold flex items-center gap-1.5">
+                    <span id="theme-icon">☀️</span>
+                    <span id="theme-text" class="hidden sm:inline">กลางวัน</span>
+                </button>
+
+                <button id="bgm-btn" onclick="toggleBGM()" class="px-2.5 py-1.5 mc-button-brown text-xs font-semibold flex items-center gap-1.5">
+                    <i id="bgm-icon" class="fas fa-music text-[#FCA800]"></i>
+                    <span class="hidden sm:inline">เพลง</span>
+                </button>
+
+                <button id="sound-btn" onclick="toggleSound()" class="px-2.5 py-1.5 mc-button-brown text-xs font-semibold flex items-center gap-1.5">
+                    <i id="sound-icon" class="fas fa-volume-up text-[#40D3CA]"></i>
+                    <span class="hidden sm:inline">เสียง</span>
+                </button>
+
+                <button id="nav-mode-btn" onclick="goToModeSelection()" class="px-3 py-1.5 mc-button-green text-xs font-bold flex items-center gap-1.5">
+                    <i class="fas fa-th-large"></i>
+                    <span>เลือกโหมด</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-grow flex items-center justify-center p-3 sm:p-5 relative z-10">
+        
+        <!-- 1. MODE SELECTION SCREEN -->
+        <div id="mode-selection-screen" class="w-full max-w-2xl flex flex-col items-center gap-5 py-4">
+            
+            <div class="mc-card w-full p-6 text-center shadow-2xl relative overflow-hidden">
+                <div class="inline-block px-3 py-1 bg-[#3B2414] text-[#FCA800] text-xs font-bold mb-3 border border-[#8A5A36]">
+                    ⚔️ MINECRAFT XO MULTIPLAYER EDITION ⚔️
+                </div>
+                <h2 class="text-2xl sm:text-4xl font-extrabold tracking-tight mb-3">
+                    ยินดีต้อนรับเข้าสู่เกม XO!
+                </h2>
+                <p class="text-xs sm:text-sm opacity-90 max-w-lg mx-auto">
+                    กรุณาเลือกรูปแบบการเล่นที่คุณต้องการ คุณสามารถเลือกเล่นรวมกันในคอมพิวเตอร์เครื่องเดียว หรือสร้างห้องเล่นออนไลน์แยกคนละเครื่องได้
+                </p>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full">
+                <!-- Local Pass & Play Mode Option -->
+                <div onclick="selectGameMode('local')" class="mc-card p-5 flex flex-col items-center text-center cursor-pointer hover:scale-[1.02] transition-transform shadow-lg group border-2 border-[#5C3A21] hover:border-[#557A2B]">
+                    <div class="w-16 h-16 rounded-full bg-[#557A2B] border-4 border-[#80B342] flex items-center justify-center text-3xl mb-3 text-white shadow-md group-hover:bg-[#628C32]">
+                        🖥️
+                    </div>
+                    <h3 class="text-lg font-bold mb-1">เล่นเครื่องเดียวกัน</h3>
+                    <div class="text-[11px] px-2 py-0.5 bg-[#3B2414] text-[#FCA800] font-bold mb-2 border border-[#8A5A36]">
+                        LOCAL 1 - 4 PLAYERS (SOLO & BOTS)
+                    </div>
+                    <p class="text-xs opacity-80 leading-relaxed mb-4">
+                        เลือกเล่น 1 - 4 คนบนเครื่องเดียวกัน สามารถเปิดบอท AI สำหรับคนเหงาหรือเพิ่มผู้เล่นได้ตามต้องการ
+                    </p>
+                    <button type="button" class="mt-auto w-full py-2 mc-button-green font-bold text-xs">
+                        เข้าสู่หน้าตั้งชื่อผู้เล่น ➔
+                    </button>
+                </div>
+
+                <!-- Online Room Mode Option -->
+                <div onclick="selectGameMode('online')" class="mc-card p-5 flex flex-col items-center text-center cursor-pointer hover:scale-[1.02] transition-transform shadow-lg group border-2 border-[#5C3A21] hover:border-[#3B7EA1]">
+                    <div class="w-16 h-16 rounded-full bg-[#3B7EA1] border-4 border-[#6BB3DC] flex items-center justify-center text-3xl mb-3 text-white shadow-md group-hover:bg-[#4792BA]">
+                        🌐
+                    </div>
+                    <h3 class="text-lg font-bold mb-1">เล่นออนไลน์</h3>
+                    <div class="text-[11px] px-2 py-0.5 bg-[#113040] text-[#6BB3DC] font-bold mb-2 border border-[#2A5A74]">
+                        ONLINE ROOM (2 - 4 PLAYERS)
+                    </div>
+                    <p class="text-xs opacity-80 leading-relaxed mb-4">
+                        เล่นแยกคนละเครื่อง สร้างห้องด้วยรหัส 4 หลัก ใส่ Password แล้วส่งให้เพื่อนๆ เข้ามาร่วมแข่งกัน real-time
+                    </p>
+                    <button type="button" class="mt-auto w-full py-2 mc-button-blue font-bold text-xs">
+                        สร้างห้อง / เข้าร่วมห้อง ➔
+                    </button>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- 2. LOCAL LOBBY SCREEN (ORIGINAL PASS & PLAY) -->
+        <div id="lobby-screen" class="hidden w-full max-w-3xl flex flex-col items-center gap-4 py-2">
+            
+            <div class="mc-card w-full p-5 text-center shadow-xl">
+                <div class="inline-block px-3 py-1 bg-[#3B2414] text-[#FCA800] text-xs font-bold mb-2 border border-[#8A5A36]">
+                    🖥️ LOCAL MODE: SAME COMPUTER 🖥️
+                </div>
+                <h2 class="text-2xl sm:text-3xl font-extrabold tracking-tight mb-2">
+                    ห้องเตรียมความพร้อม & กรอกชื่อเข้าเล่น
+                </h2>
+                <p class="text-xs sm:text-sm opacity-80 max-w-xl mx-auto">
+                    กรอกชื่อ เลือกสัญลักษณ์ และเลือกสีประจำตัวของผู้เล่นทั้ง 4 คน หรือเปิดโหมดบอท AI สำหรับตำแหน่งที่ว่าง ก่อนกด Join เข้าสู่กระดานแข่งขัน!
+                </p>
+            </div>
+
+            <!-- Match Rules & Board Config Card -->
+            <div class="mc-card w-full p-4 sm:p-5">
+                <h3 class="text-sm font-bold mb-3 flex items-center gap-2 pb-2 border-b-2 border-[#5C3A21]">
+                    <span class="text-base">⚙️</span> ตั้งค่ากติกาและขนาดกระดาน
+                </h3>
+
+                <div class="mb-4 bg-black/10 p-3 border-2 border-[#5C3A21]">
+                    <label class="block text-sm font-bold mb-2.5 flex items-center gap-1.5">
+                        <i class="fas fa-users text-[#FCA800]"></i>
+                        <span>เลือกจำนวนผู้เล่นในเครื่องเดียวกัน</span>
+                    </label>
+                    <div class="grid grid-cols-4 gap-2" id="local-count-group" role="group">
+                        <button type="button" id="local-count-1" onclick="setLocalPlayerCount(1)" class="count-select-btn">
+                            <span class="count-select-num">1</span>
+                            <span class="count-select-label">Solo<br>vs Bot</span>
+                            <i class="fas fa-circle-check count-select-check"></i>
+                        </button>
+                        <button type="button" id="local-count-2" onclick="setLocalPlayerCount(2)" class="count-select-btn">
+                            <span class="count-select-num">2</span>
+                            <span class="count-select-label">คน</span>
+                            <i class="fas fa-circle-check count-select-check"></i>
+                        </button>
+                        <button type="button" id="local-count-3" onclick="setLocalPlayerCount(3)" class="count-select-btn">
+                            <span class="count-select-num">3</span>
+                            <span class="count-select-label">คน</span>
+                            <i class="fas fa-circle-check count-select-check"></i>
+                        </button>
+                        <button type="button" id="local-count-4" onclick="setLocalPlayerCount(4)" class="count-select-btn">
+                            <span class="count-select-num">4</span>
+                            <span class="count-select-label">คน</span>
+                            <i class="fas fa-circle-check count-select-check"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div>
+                        <label class="block text-xs font-bold mb-1">ขนาดกระดานตาราง</label>
+                        <select id="setting-grid-size" onchange="updateWinCountOptions()" class="w-full px-2 py-1.5 text-xs font-semibold">
+                            <option value="5">5 x 5 ตาราง</option>
+                            <option value="6">6 x 6 ตาราง</option>
+                            <option value="7">7 x 7 ตาราง</option>
+                            <option value="8" selected>8 x 8 ตาราง (แนะนำ)</option>
+                            <option value="10">10 x 10 ตาราง</option>
+                            <option value="12">12 x 12 ตาราง</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold mb-1">จำนวนเรียงชนะ</label>
+                        <select id="setting-win-count" class="w-full px-2 py-1.5 text-xs font-semibold">
+                            <!-- Populated dynamically -->
+                        </select>
+                    </div>
+
+                    <div>
+                        <div class="flex items-center justify-between mb-1">
+                            <label class="block text-xs font-bold">เวลาต่อรอบ</label>
+                            <label class="flex items-center gap-1 text-[11px] font-bold cursor-pointer">
+                                <input type="checkbox" id="chk-custom-timer" onchange="toggleCustomTimerMode()" class="focus:ring-0 cursor-pointer">
+                                <span>กำหนดเอง</span>
+                            </label>
+                        </div>
+                        <select id="setting-timer" class="w-full px-2 py-1.5 text-xs font-semibold">
+                            <option value="0">ไม่จำกัดเวลา</option>
+                            <option value="10">10 วินาที</option>
+                            <option value="15" selected>15 วินาที</option>
+                            <option value="30">30 วินาที</option>
+                            <option value="45">45 วินาที</option>
+                            <option value="60">60 วินาที (1 นาที)</option>
+                        </select>
+                        <div id="custom-timer-input-box" class="hidden flex items-center gap-1.5">
+                            <input type="number" id="setting-timer-custom" min="3" max="600" value="20" placeholder="วินาที"
+                                class="w-full px-2 py-1.5 text-xs font-bold">
+                            <span class="text-xs shrink-0 font-bold">วินาที</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mc-card w-full p-4 sm:p-5">
+                <div class="flex items-center justify-between mb-3 pb-2 border-b-2 border-[#5C3A21]">
+                    <h3 class="text-sm font-bold flex items-center gap-2">
+                        <span class="text-base">🧑‍🤝‍🧑</span> ลงทะเบียนผู้เล่น 4 คน (Player Registration)
+                    </h3>
+                    <button type="button" onclick="randomizeAllPlayers()" class="px-2.5 py-1 mc-button-brown text-xs font-bold flex items-center gap-1">
+                        <i class="fas fa-dice text-[#FCA800]"></i> สุ่มชื่อ & สัญลักษณ์
+                    </button>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3" id="player-inputs-container">
+                    <!-- Dynamic player registration forms populated by JS -->
+                </div>
+            </div>
+
+            <!-- Action Buttons for Joining Game -->
+            <div class="w-full flex flex-col sm:flex-row gap-2">
+                <button onclick="startGameFromLobby()" class="flex-1 py-3 mc-button-green font-extrabold text-sm sm:text-base tracking-wide flex items-center justify-center gap-2 shadow-lg">
+                    <i class="fas fa-right-to-bracket text-lg"></i>
+                    <span>JOIN GAME & เริ่มการแข่งขัน (Start Battle)</span>
+                </button>
+            </div>
+
+        </div>
+
+        <!-- 3. ONLINE MODE SETUP SCREEN (JOIN / CREATE ROOM) -->
+        <div id="online-setup-screen" class="hidden w-full max-w-2xl flex flex-col items-center gap-4 py-2">
+            
+            <div class="mc-card w-full p-4 sm:p-5">
+                <div class="text-center mb-4 pb-3 border-b-2 border-[#5C3A21]">
+                    <div class="inline-block px-3 py-0.5 bg-[#113040] text-[#6BB3DC] text-xs font-bold mb-1 border border-[#2A5A74]">
+                        🌐 ONLINE MULTIPLAYER 🌐
+                    </div>
+                    <h2 class="text-xl sm:text-2xl font-extrabold tracking-tight">
+                        ตั้งค่าเล่นออนไลน์ (Online Room Setup)
+                    </h2>
+                </div>
+
+                <!-- TAB SWITCH BUTTONS -->
+                <div class="grid grid-cols-2 gap-2 mb-4">
+                    <button type="button" id="tab-btn-join" onclick="switchOnlineTab('join')" 
+                        class="py-2.5 font-bold text-xs sm:text-sm border-2 border-[#5C3A21] bg-[#557A2B] text-white shadow-sm flex items-center justify-center gap-2 transition">
+                        <i class="fas fa-sign-in-alt"></i>
+                        <span>เข้าร่วมห้อง (Join Room)</span>
+                    </button>
+                    <button type="button" id="tab-btn-create" onclick="switchOnlineTab('create')" 
+                        class="py-2.5 font-bold text-xs sm:text-sm border-2 border-[#5C3A21] bg-[#8A5A36] text-white opacity-80 hover:opacity-100 flex items-center justify-center gap-2 transition">
+                        <i class="fas fa-plus-circle"></i>
+                        <span>สร้างห้องใหม่ (Create Room)</span>
+                    </button>
+                </div>
+
+                <!-- FORM 1: JOIN ROOM FORM (DEFAULT ACTIVE) -->
+                <div id="online-join-panel" class="bg-black/10 p-4 border-2 border-[#5C3A21] flex flex-col gap-3">
+                    <h3 class="text-sm font-bold flex items-center gap-2 border-b pb-2 border-[#5C3A21] text-[#557A2B]">
+                        <i class="fas fa-key"></i>
+                        <span>เข้าร่วมห้องแข่งขัน (Join Game Room)</span>
+                    </h3>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs font-bold mb-1">เลขห้อง (4 หลัก)</label>
+                            <input type="text" id="join-room-code" maxlength="4" placeholder="เช่น 4829" 
+                                class="w-full px-2.5 py-2 text-xs font-pixel font-bold tracking-widest text-center">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold mb-1">Password (4 หลัก)</label>
+                            <input type="password" id="join-room-pass" maxlength="4" placeholder="****" 
+                                class="w-full px-2.5 py-2 text-xs font-pixel font-bold tracking-widest text-center">
+                        </div>
+                    </div>
+
+                    <div class="pt-2">
+                        <button type="button" onclick="joinOnlineRoom()" class="w-full py-3 mc-button-green font-bold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-md">
+                            <i class="fas fa-check-circle text-base"></i> ตกลง & เข้าสู่ห้องแข่งขัน
+                        </button>
+                    </div>
+                </div>
+
+                <!-- FORM 2: CREATE ROOM FORM (HIDDEN BY DEFAULT) -->
+                <div id="online-create-panel" class="hidden bg-black/10 p-4 border-2 border-[#5C3A21] flex flex-col gap-3">
+                    <h3 class="text-sm font-bold flex items-center gap-2 border-b pb-2 border-[#5C3A21] text-[#3B7EA1]">
+                        <i class="fas fa-hammer"></i>
+                        <span>สร้างห้องเกมใหม่ (Create New Room)</span>
+                    </h3>
+
+                    <!-- Player Count Selection inside Create Room -->
+                    <div>
+                        <label class="block text-xs font-bold mb-2 flex items-center gap-1.5">
+                            <i class="fas fa-users text-[#FCA800]"></i>
+                            <span>เลือกจำนวนผู้เล่นในห้อง (Select Player Count)</span>
+                        </label>
+                        <div class="grid grid-cols-3 gap-2 max-w-md mx-auto mb-2">
+                            <button type="button" id="btn-count-2" onclick="setOnlinePlayerCount(2)" 
+                                class="py-2 font-bold text-xs border-2 border-[#5C3A21] bg-[#557A2B] text-white shadow-sm transition">
+                                👥 2 คน
+                            </button>
+                            <button type="button" id="btn-count-3" onclick="setOnlinePlayerCount(3)" 
+                                class="py-2 font-bold text-xs border-2 border-[#5C3A21] bg-[#8A5A36] text-white opacity-80 hover:opacity-100 transition">
+                                👨‍👩‍👦 3 คน
+                            </button>
+                            <button type="button" id="btn-count-4" onclick="setOnlinePlayerCount(4)" 
+                                class="py-2 font-bold text-xs border-2 border-[#5C3A21] bg-[#8A5A36] text-white opacity-80 hover:opacity-100 transition">
+                                👨‍👩‍👧‍👦 4 คน
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs font-bold mb-1">ระบบเรนเดอร์เลขห้อง (4 หลัก)</label>
+                            <div class="flex items-center gap-1.5">
+                                <input type="text" id="create-room-code" readonly 
+                                    class="w-full px-2.5 py-2 text-xs font-pixel font-bold tracking-widest text-center bg-black/20 text-[#FCA800]">
+                                <button type="button" onclick="generateNewRoomCode()" class="px-2.5 py-2 mc-button-brown text-xs font-bold shrink-0">
+                                    <i class="fas fa-sync-alt"></i> สุ่ม
+                                </button>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold mb-1">กำหนด Password (4 หลัก)</label>
+                            <input type="password" id="create-room-pass" maxlength="4" value="1234" placeholder="ระบุ Password 4 หลัก" 
+                                class="w-full px-2.5 py-2 text-xs font-pixel font-bold tracking-widest text-center">
+                        </div>
+                    </div>
+
+                    <div class="text-[11px] opacity-75 text-center pt-1">
+                        💡 กด "สร้างห้องเกม" เพื่อตั้งชื่อตัวละคร เลือกสัญลักษณ์ และเปิดห้องรอสำหรับเพื่อนๆ
+                    </div>
+
+                    <div class="pt-2">
+                        <button type="button" onclick="openCreateHostModal()" class="w-full py-3 mc-button-blue font-bold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-md">
+                            <i class="fas fa-hammer text-base"></i> สร้างห้องเกม ➔
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+
+        </div>
+
+        <!-- 4. MODAL FOR HOST NAME REGISTRATION WHEN CREATING ONLINE ROOM -->
+        <div id="host-name-modal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 bg-black/70 backdrop-blur-xs">
+            <div class="mc-card max-w-sm w-full p-4 shadow-2xl">
+                <div class="flex items-center justify-between mb-3 pb-2 border-b-2 border-[#5C3A21]">
+                    <h3 class="text-xs sm:text-sm font-bold flex items-center gap-1.5">
+                        <span>👑</span> กรอกชื่อผู้สร้างห้อง (Host Details)
+                    </h3>
+                    <button type="button" onclick="closeHostNameModal()" class="bg-[#8A5A36] text-white px-2 py-0.5 border border-[#3B2414]">
+                        <i class="fas fa-times text-xs"></i>
+                    </button>
+                </div>
+
+                <div class="flex flex-col gap-3 mb-4">
+                    <div>
+                        <label class="block text-xs font-bold mb-1">ชื่อที่ตัวเองต้องการจะแสดง</label>
+                        <input type="text" id="host-player-name" placeholder="กรอกชื่อของคุณ..." value="Host Master" 
+                            class="w-full px-2 py-1.5 text-xs font-bold">
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold mb-1">สัญลักษณ์ประจำตัว</label>
+                        <div class="flex items-center gap-2">
+                            <button type="button" onclick="openIconPickerForHost()" id="host-symbol-btn" 
+                                class="px-3 py-1.5 bg-[#E8DFCE] border-2 border-[#5C3A21] text-base font-bold flex items-center gap-2">
+                                <span id="host-symbol-disp">⛏️</span>
+                                <span class="text-[10px] opacity-70">เปลี่ยน 🎨</span>
+                            </button>
+                            <input type="hidden" id="host-symbol" value="⛏️">
+                            
+                            <select id="host-color-select" class="flex-1 px-2 py-1.5 text-xs font-bold">
+                                <!-- Rendered dynamically -->
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <button type="button" onclick="confirmCreateRoom()" class="w-full py-2.5 mc-button-green font-bold text-xs flex items-center justify-center gap-1">
+                    <i class="fas fa-check"></i> ตกลง & เข้าสู่ห้องรอออนไลน์
+                </button>
+            </div>
+        </div>
+
+        <!-- MODAL FOR JOIN PLAYER REGISTRATION AFTER VALIDATING ROOM & PASS -->
+        <div id="join-player-modal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 bg-black/70 backdrop-blur-xs">
+            <div class="mc-card max-w-sm w-full p-4 shadow-2xl">
+                <div class="flex items-center justify-between mb-3 pb-2 border-b-2 border-[#5C3A21]">
+                    <h3 class="text-xs sm:text-sm font-bold flex items-center gap-1.5">
+                        <span>👤</span> กรอกข้อมูลผู้เล่น (Join Details)
+                    </h3>
+                    <button type="button" onclick="closeJoinPlayerModal()" class="bg-[#8A5A36] text-white px-2 py-0.5 border border-[#3B2414]">
+                        <i class="fas fa-times text-xs"></i>
+                    </button>
+                </div>
+
+                <div class="flex flex-col gap-3 mb-4">
+                    <div>
+                        <label class="block text-xs font-bold mb-1">ชื่อที่จะใช้เล่น</label>
+                        <input type="text" id="join-modal-player-name" placeholder="กรอกชื่อของคุณ..." value="Guest Player" 
+                            class="w-full px-2 py-1.5 text-xs font-bold">
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold mb-1">สัญลักษณ์ประจำตัว</label>
+                        <div class="flex items-center gap-2">
+                            <button type="button" onclick="openIconPickerForJoin()" id="join-modal-symbol-btn" 
+                                class="px-3 py-1.5 bg-[#E8DFCE] border-2 border-[#5C3A21] text-base font-bold flex items-center gap-2">
+                                <span id="join-modal-symbol-disp">🗡️</span>
+                                <span class="text-[10px] opacity-70">เปลี่ยน 🎨</span>
+                            </button>
+                            <input type="hidden" id="join-modal-symbol" value="🗡️">
+                            
+                            <select id="join-modal-color-select" class="flex-1 px-2 py-1.5 text-xs font-bold">
+                                <!-- Rendered dynamically -->
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <button type="button" onclick="confirmJoinRoom()" class="w-full py-2.5 mc-button-green font-bold text-xs flex items-center justify-center gap-1">
+                    <i class="fas fa-check"></i> ตกลง & เข้าสู่ห้องรอออนไลน์
+                </button>
+            </div>
+        </div>
+
+        <!-- 5. ONLINE WAITING LOBBY (LOBBY BEFORE GAME START) -->
+        <div id="online-lobby-waiting" class="hidden w-full max-w-2xl flex flex-col items-center gap-4 py-2">
+            
+            <div class="mc-card w-full p-4 sm:p-5">
+                <div class="flex items-center justify-between pb-3 border-b-2 border-[#5C3A21] mb-3">
+                    <div>
+                        <div class="text-[10px] font-bold opacity-75 uppercase">Online Waiting Room</div>
+                        <h2 class="text-lg sm:text-xl font-bold flex items-center gap-2">
+                            <span>ห้องเลขที่:</span>
+                            <span id="display-online-room-code" class="text-[#FCA800] font-pixel text-2xl tracking-widest">4829</span>
+                        </h2>
+                    </div>
+
+                    <div class="text-right">
+                        <div class="text-[10px] font-bold opacity-75">Password</div>
+                        <div id="display-online-room-pass" class="font-pixel text-lg text-[#40D3CA] tracking-wider">1234</div>
+                    </div>
+                </div>
+
+                <!-- Players slots grid -->
+                <div class="mb-4">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-xs font-bold">รายชื่อผู้เล่นที่เข้ามาในห้อง (<span id="connected-count">1</span>/<span id="target-player-count">4</span>)</span>
+                        <button type="button" onclick="copyOnlineRoomInfo()" class="px-2 py-1 mc-button-brown text-[11px] font-bold flex items-center gap-1">
+                            <i class="fas fa-copy"></i> คัดลอกเลขห้อง
+                        </button>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2" id="online-slots-container">
+                        <!-- Dynamic Slots -->
+                    </div>
+                </div>
+
+                <!-- Host Controls for match settings -->
+                <div id="host-settings-panel" class="bg-black/10 p-3 border-2 border-[#5C3A21] mb-4">
+                    <div class="text-xs font-bold mb-2 flex items-center gap-1 text-[#557A2B]">
+                        <span>⚙️</span> ตั้งค่ากระดาน (สำหรับ Host)
+                    </div>
+                    <div class="grid grid-cols-3 gap-2 text-xs font-bold">
+                        <div>
+                            <label class="block text-[10px] mb-0.5">ขนาดกระดาน</label>
+                            <select id="online-grid-size" onchange="syncOnlineSettings()" class="w-full px-1 py-1 text-xs font-bold">
+                                <option value="5">5x5</option>
+                                <option value="6">6x6</option>
+                                <option value="8" selected>8x8</option>
+                                <option value="10">10x10</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-[10px] mb-0.5">เรียงชนะ</label>
+                            <select id="online-win-count" onchange="syncOnlineSettings()" class="w-full px-1 py-1 text-xs font-bold">
+                                <option value="3">3 ตัว</option>
+                                <option value="4" selected>4 ตัว</option>
+                                <option value="5">5 ตัว</option>
+                            </select>
+                        </div>
+                        <div>
+                            <div class="flex items-center justify-between mb-0.5 gap-1">
+                                <label class="block text-[10px]">เวลาต่อรอบ</label>
+                                <label class="flex items-center gap-1 text-[9px] cursor-pointer shrink-0">
+                                    <input type="checkbox" id="chk-online-custom-timer" onchange="toggleOnlineCustomTimerMode()" class="focus:ring-0 cursor-pointer w-3 h-3">
+                                    <span>กำหนดเอง</span>
+                                </label>
+                            </div>
+                            <select id="online-timer" onchange="syncOnlineSettings()" class="w-full px-1 py-1 text-xs font-bold">
+                                <option value="0">ไม่จำกัด</option>
+                                <option value="10">10 วินาที</option>
+                                <option value="15" selected>15 วินาที</option>
+                                <option value="30">30 วินาที</option>
+                            </select>
+                            <div id="online-custom-timer-input-box" class="hidden items-center gap-1 mt-1">
+                                <input type="number" id="online-timer-custom" min="3" max="600" value="20" placeholder="วินาที" onchange="syncOnlineSettings()"
+                                    class="w-full px-1 py-1 text-xs font-bold">
+                                <span class="text-[9px] shrink-0 font-bold">วิ</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex gap-2">
+                    <button type="button" onclick="leaveOnlineRoom()" class="w-1/3 py-2.5 mc-button-brown font-bold text-xs">
+                        <i class="fas fa-sign-out-alt"></i> ออกจากห้อง
+                    </button>
+                    <button type="button" id="btn-start-online-game" onclick="startOnlineBattle()" class="w-2/3 py-2.5 mc-button-green font-bold text-xs flex items-center justify-center gap-1 shadow-md">
+                        <i class="fas fa-play"></i> เริ่มการแข่งขันออนไลน์ (Start Battle)
+                    </button>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- ICON PICKER MODAL -->
+        <div id="icon-picker-modal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 bg-black/70 backdrop-blur-xs">
+            <div class="mc-card max-w-md w-full p-4 shadow-2xl">
+                
+                <div class="flex items-center justify-between mb-3 pb-2 border-b-2 border-[#5C3A21]">
+                    <h3 class="text-xs sm:text-sm font-bold flex items-center gap-1.5">
+                        <span>🎨</span> เลือกไอคอนสำหรับ <span id="icon-picker-player-name" class="text-[#557A2B]">ผู้เล่น</span>
+                    </h3>
+                    <button type="button" onclick="closeIconPicker()" class="bg-[#8A5A36] text-white px-2 py-0.5 border border-[#3B2414] hover:bg-[#A06B42] transition">
+                        <i class="fas fa-times text-xs"></i>
+                    </button>
+                </div>
+
+                <!-- Category Tabs -->
+                <div class="flex gap-1 mb-3 text-[11px] font-bold">
+                    <button type="button" id="cat-btn-all" onclick="filterIcons('all')" class="flex-1 py-1 bg-[#557A2B] text-white border-2 border-[#2F4518] text-center shadow-xs">ทั้งหมด</button>
+                    <button type="button" id="cat-btn-mc" onclick="filterIcons('mc')" class="flex-1 py-1 bg-[#8A5A36] text-white border-2 border-[#3B2414] hover:bg-[#A06B42] text-center opacity-80">⛏️ Minecraft</button>
+                    <button type="button" id="cat-btn-ios" onclick="filterIcons('ios')" class="flex-1 py-1 bg-[#8A5A36] text-white border-2 border-[#3B2414] hover:bg-[#A06B42] text-center opacity-80">📱 iOS Emoji</button>
+                </div>
+
+                <!-- Grid View of Icons -->
+                <div id="icon-grid" class="grid grid-cols-6 gap-2 min-h-[180px] p-2 bg-black/10 border-2 border-[#5C3A21] mb-3 items-center justify-items-center">
+                    <!-- Dynamic Icon Buttons -->
+                </div>
+
+                <!-- Pagination Control Footer -->
+                <div class="flex items-center justify-between text-xs font-bold pt-1 border-t border-[#5C3A21]/40">
+                    <button type="button" id="icon-prev-page" onclick="changeIconPage(-1)" 
+                        class="px-3 py-1 mc-button-brown disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1 transition">
+                        <i class="fas fa-chevron-left text-[10px]"></i> ย้อนกลับ
+                    </button>
+                    
+                    <span id="icon-page-indicator" class="text-xs font-pixel font-bold tracking-wide">หน้า 1 / 5</span>
+
+                    <button type="button" id="icon-next-page" onclick="changeIconPage(1)" 
+                        class="px-3 py-1 mc-button-brown disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1 transition">
+                        ถัดไป <i class="fas fa-chevron-right text-[10px]"></i>
+                    </button>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- 6. GAME BATTLE SCREEN -->
+        <div id="game-screen" class="hidden w-full max-w-3xl flex flex-col items-center gap-3">
+            
+            <!-- Players Scoreboard Cards -->
+            <div class="w-full grid grid-cols-2 sm:grid-cols-4 gap-2" id="scoreboard">
+                <!-- Dynamic Player Cards -->
+            </div>
+
+            <!-- Game Control & Status Bar -->
+            <div class="w-full mc-card p-2.5 sm:p-3 flex flex-wrap items-center justify-between gap-2.5">
+                <div class="flex items-center gap-2.5">
+                    <div id="turn-indicator-badge" class="px-2.5 py-1 font-bold text-xs flex items-center gap-1.5 border-2 bg-white">
+                        <!-- Dynamic Turn Badge -->
+                    </div>
+                    <span id="game-status-text" class="text-xs font-bold">ตาของคุณ!</span>
+                </div>
+
+                <!-- Turn Countdown Timer Bar -->
+                <div id="timer-wrapper" class="flex items-center gap-2 min-w-[130px] sm:min-w-[150px]">
+                    <i class="far fa-clock text-[#FCA800] text-xs"></i>
+                    <div class="flex-1 bg-black/20 border border-[#5C3A21] h-3 overflow-hidden p-0.5">
+                        <div id="timer-bar" class="bg-[#FCA800] h-full w-full transition-all duration-300"></div>
+                    </div>
+                    <span id="timer-text" class="text-xs font-pixel font-bold text-base min-w-[28px] text-right">15s</span>
+                </div>
+
+                <div class="flex items-center gap-1.5">
+                    <button onclick="undoMove()" class="px-2.5 py-1 mc-button-brown text-xs font-bold flex items-center gap-1">
+                        <i class="fas fa-undo text-[#FCA800]"></i> ย้อนกลับ
+                    </button>
+                    <button onclick="resetRound()" class="px-2.5 py-1 mc-button-brown text-xs font-bold flex items-center gap-1">
+                        <i class="fas fa-sync-alt text-[#40D3CA]"></i> เริ่มรอบใหม่
+                    </button>
+                </div>
+            </div>
+
+            <!-- Interactive Board Grid Arena -->
+            <div class="w-full flex justify-center items-center overflow-x-auto p-1">
+                <div id="board" class="mc-panel p-3 shadow-md transition-all max-w-full">
+                    <!-- Dynamic Grid Cells -->
+                </div>
+            </div>
+
+            <div class="text-center text-xs font-semibold px-3.5 py-1.5 mc-card">
+                เงื่อนไขชนะ: เรียงสัญลักษณ์ติดกัน <span id="rule-win-count" class="text-[#FCA800] font-bold text-sm">4</span> ตัว (แนวนอน, แนวตั้ง, ทะแยง)
+            </div>
+
+        </div>
+
+    </main>
+
+    <!-- WIN / ROUND END MODAL -->
+    <div id="win-modal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
+        <div class="mc-card max-w-xs w-full p-5 text-center shadow-2xl transition-all" id="win-modal-card">
+            
+            <div id="win-avatar-container" class="w-14 h-14 mx-auto border-2 flex items-center justify-center text-3xl mb-3">
+                🏆
+            </div>
+
+            <h2 id="win-title" class="text-lg font-bold mb-1">ผู้ชนะ!</h2>
+            <p id="win-subtitle" class="text-xs opacity-80 mb-5">ผู้เล่น 1 เป็นฝ่ายชนะในรอบนี้!</p>
+
+            <div class="flex flex-col gap-2">
+                <button onclick="nextRound()" class="w-full py-2 mc-button-green font-bold text-xs">
+                    <i class="fas fa-redo mr-1.5"></i>เล่นรอบต่อไป
+                </button>
+                <button onclick="goToModeSelection()" class="w-full py-1.5 mc-button-brown font-bold text-xs">
+                    <i class="fas fa-home mr-1.5"></i>กลับสู่หน้าเลือกโหมด
+                </button>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="w-full py-2 text-center text-xs text-white bg-[#3B2414] border-t-2 border-[#23150B]">
+        XO MooAodCompany &bull; Minecraft Multi-Mode & Online Edition ⛏️
+    </footer>
+
+    <script>
+        const sound = {
+            audioCtx: null,
+            soundEnabled: true,
+            bgmEnabled: false,
+            bgmInterval: null,
+            
+            init() {
+                if (!this.audioCtx) {
+                    const AudioContext = window.AudioContext || window.webkitAudioContext;
+                    if (AudioContext) {
+                        this.audioCtx = new AudioContext();
+                    }
+                }
+                if (this.audioCtx && this.audioCtx.state === 'suspended') {
+                    this.audioCtx.resume();
+                }
+            },
+
+            playTone(freq, type, duration, gainVal = 0.1) {
+                if (!this.soundEnabled) return;
+                this.init();
+                if (!this.audioCtx) return;
+
+                try {
+                    const osc = this.audioCtx.createOscillator();
+                    const gain = this.audioCtx.createGain();
+                    osc.type = type;
+                    osc.frequency.setValueAtTime(freq, this.audioCtx.currentTime);
+                    gain.gain.setValueAtTime(gainVal, this.audioCtx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.001, this.audioCtx.currentTime + duration);
+
+                    osc.connect(gain);
+                    gain.connect(this.audioCtx.destination);
+
+                    osc.start();
+                    osc.stop(this.audioCtx.currentTime + duration);
+                } catch (e) {}
+            },
+
+            playTick() {
+                this.playTone(600, 'square', 0.05, 0.05);
+            },
+
+            playMove(pitchMultiplier = 1.0) {
+                this.playTone(350 * pitchMultiplier, 'sine', 0.12, 0.15);
+            },
+
+            playWin() {
+                if (!this.soundEnabled) return;
+                const notes = [261.63, 329.63, 392.00, 523.25];
+                notes.forEach((freq, idx) => {
+                    setTimeout(() => {
+                        this.playTone(freq, 'triangle', 0.3, 0.2);
+                    }, idx * 120);
+                });
+            },
+
+            playUndo() {
+                this.playTone(200, 'sawtooth', 0.1, 0.08);
+            },
+
+            startBGM() {
+                if (this.bgmInterval) clearInterval(this.bgmInterval);
+                const melody = [220, 261, 293, 329, 293, 261, 220, 196];
+                let noteIdx = 0;
+                this.bgmInterval = setInterval(() => {
+                    if (this.bgmEnabled && this.soundEnabled) {
+                        this.playTone(melody[noteIdx], 'triangle', 0.2, 0.03);
+                        noteIdx = (noteIdx + 1) % melody.length;
+                    }
+                }, 400);
+            },
+
+            stopBGM() {
+                if (this.bgmInterval) {
+                    clearInterval(this.bgmInterval);
+                    this.bgmInterval = null;
+                }
+            }
+        };
+
+        const COLOR_OPTIONS = [
+            { name: "🟩 Emerald (เขียว)", bgClass: "bg-[#557A2B]", textClass: "text-[#2F4518]", borderClass: "border-[#80B342]", pitch: 0.9 },
+            { name: "💎 Diamond (ฟ้า)", bgClass: "bg-[#40D3CA]", textClass: "text-[#185E5A]", borderClass: "border-[#89FFF8]", pitch: 1.2 },
+            { name: "🟧 Gold (ส้มทอง)", bgClass: "bg-[#FCA800]", textClass: "text-[#6E4900]", borderClass: "border-[#FFD269]", pitch: 1.1 },
+            { name: "🟥 Redstone (แดง)", bgClass: "bg-[#E53935]", textClass: "text-[#68100E]", borderClass: "border-[#FF7976]", pitch: 1.3 },
+            { name: "🟪 Obsidian (ม่วง)", bgClass: "bg-[#7E57C2]", textClass: "text-[#36215A]", borderClass: "border-[#B388FF]", pitch: 1.0 },
+            { name: "🟫 Oak Wood (น้ำตาล)", bgClass: "bg-[#8A5A36]", textClass: "text-[#3B2414]", borderClass: "border-[#C48E66]", pitch: 0.85 }
+        ];
+
+        const MC_SYMBOLS = [
+            "⛏️", "🗡️", "💎", "🧱", "🐷", "🧟", "💣", "🍎", "🏹", "🛡️", 
+            "🧪", "👁️", "🍞", "🌿", "🥩", "🌟", "🚪", "🔥", "🕯️", "🪙", 
+            "👑", "🧭", "🍖", "🐺", "🕷️", "🐲", "🎣", "🥕", "🥔", "🌽", 
+            "🥖", "🍰", "🎂", "🍬", "⚔️", "🪓", "🗺️", "📦", "🔮", "📜"
+        ];
+
+        const IOS_SYMBOLS = [
+            "🎮", "👾", "🤖", "👻", "💀", "☠️", "👽", "🎃", "🎯", "🎲", 
+            "⚡️", "💥", "💫", "✨", "🔥", "🌊", "❄️", "🪐", "☀️", "🌙",
+            "❌", "⭕", "🔺", "🔲", "🔴", "🔵", "🟡", "🟢", "🟣", "⬛",
+            "🐶", "🐱", "🦊", "🐻", "🐼", "🐯", "🦁", "🐮", "🐵", "🐔",
+            "🐧", "🐦", "🦅", "🦉", "🦇", "🦄", "🐝", "🐢", "🐍", "🦖",
+            "🐙", "🦀", "🐬", "🦈", "🦩", "🕊️", "🐇", "🦔", "🐾", "🍀",
+            "🍕", "🍔", "🍟", "🌭", "🍿", "🍩", "🍦", "🍣", "🧋", "🍉"
+        ];
+
+        const ALL_SYMBOLS = [...MC_SYMBOLS, ...IOS_SYMBOLS];
+
+        const RANDOM_NAMES = [
+            ["Steve", "Alex", "Creeper", "Enderman", "Villager", "Golem", "Zombie", "Skeleton"],
+            ["Hero", "Dragon", "Miner", "Builder", "Hunter", "Knight", "Master", "Wizard"]
+        ];
+
+        /* Game State Variables */
+        let gameMode = 'local'; // 'local' or 'online'
+        let localPlayerCount = 4; // 1, 2, 3, or 4 players in local mode
+        let gridSize = 8;
+        let winCount = 4;
+        let turnTimerDuration = 15;
+        let players = [];
+        let startingPlayerIndex = 0;
+        let currentTurn = 0;
+        let lastWinnerIndex = null;
+        let board = [];
+        let moveHistory = [];
+        let isGameActive = false;
+        let timerInterval = null;
+        let remainingTime = 15;
+
+        /* Icon Picker State */
+        let currentPickingPlayerIdx = null;
+        let isPickingForHost = false;
+        let isPickingForJoin = false;
+        let currentIconCategory = 'all';
+        let currentIconList = ALL_SYMBOLS;
+        let iconCurrentPage = 0;
+        const ICONS_PER_PAGE = 24;
+
+        /* Online State Variables */
+        let onlineTargetPlayerCount = 4;
+        let onlineRoomCode = "";
+        let onlineRoomPass = "";
+        let isOnlineHost = false;
+        let myOnlineSlotIndex = 0;
+
+        // PeerJS networking: host is the room authority/relay.
+        let onlinePeer = null;
+        let onlineHostConnection = null;
+        const onlineHostConnections = new Map();
+        let onlinePeerId = "";
+        let onlineTurnStartedAt = 0;
+        let onlineLastResult = null;
+        const DEFAULT_PLAYERS_CONFIG = [
+            { id: 0, defaultName: "Player 1 (ผู้เล่น 1)", symbol: "⛏️", colorIndex: 0 },
+            { id: 1, defaultName: "Player 2 (ผู้เล่น 2)", symbol: "🗡️", colorIndex: 1 },
+            { id: 2, defaultName: "Player 3 (ผู้เล่น 3)", symbol: "💎", colorIndex: 2 },
+            { id: 3, defaultName: "Player 4 (ผู้เล่น 4)", symbol: "💣", colorIndex: 3 }
+        ];
+
+        function goToModeSelection() {
+            if (timerInterval) clearInterval(timerInterval);
+            isGameActive = false;
+            if (gameMode === 'online') closePeerNetworking();
+            
+            document.getElementById('game-screen').classList.add('hidden');
+            document.getElementById('win-modal').classList.add('hidden');
+            document.getElementById('lobby-screen').classList.add('hidden');
+            document.getElementById('online-setup-screen').classList.add('hidden');
+            document.getElementById('online-lobby-waiting').classList.add('hidden');
+            document.getElementById('mode-selection-screen').classList.remove('hidden');
+
+            document.getElementById('header-mode-tag').textContent = "MODE SELECT";
+            
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function selectGameMode(mode) {
+            sound.playTick();
+            gameMode = mode;
+
+            document.getElementById('mode-selection-screen').classList.add('hidden');
+
+            if (mode === 'local') {
+                document.getElementById('header-mode-tag').textContent = "LOCAL MODE";
+                document.getElementById('lobby-screen').classList.remove('hidden');
+                setLocalPlayerCount(localPlayerCount);
+            } else {
+                document.getElementById('header-mode-tag').textContent = "ONLINE MODE";
+                document.getElementById('online-setup-screen').classList.remove('hidden');
+                switchOnlineTab('join');
+                generateNewRoomCode();
+                setOnlinePlayerCount(4);
+            }
+        }
+
+        function setLocalPlayerCount(count) {
+            sound.playTick();
+            localPlayerCount = count;
+
+            [1, 2, 3, 4].forEach(c => {
+                const btn = document.getElementById(`local-count-${c}`);
+                if (!btn) return;
+                if (c === count) {
+                    btn.className = "py-2 font-bold text-xs border-2 border-[#5C3A21] bg-[#557A2B] text-white shadow-sm transition";
+                } else {
+                    btn.className = "py-2 font-bold text-xs border-2 border-[#5C3A21] bg-[#8A5A36] text-white opacity-80 hover:opacity-100 transition";
+                }
+            });
+
+            initLobbyForm();
+        }
+
+        /* --- LOCAL LOBBY FUNCTIONS --- */
+        function initLobbyForm() {
+            const container = document.getElementById('player-inputs-container');
+            if (!container) return;
+            container.innerHTML = '';
+
+            // If 1 Player (Solo) selected, render 2 slots by default (Player 1 = Human, Player 2 = Bot)
+            const slotsToRender = localPlayerCount === 1 ? 2 : localPlayerCount;
+
+            for (let idx = 0; idx < slotsToRender; idx++) {
+                const p = DEFAULT_PLAYERS_CONFIG[idx] || {
+                    id: idx,
+                    defaultName: `Player ${idx + 1} (ผู้เล่น ${idx + 1})`,
+                    symbol: ALL_SYMBOLS[idx % ALL_SYMBOLS.length],
+                    colorIndex: idx % COLOR_OPTIONS.length
+                };
+
+                const colorTheme = COLOR_OPTIONS[p.colorIndex % COLOR_OPTIONS.length];
+                const isBotDefault = (localPlayerCount === 1 && idx > 0);
+                const defaultName = isBotDefault ? `บอท AI ${idx + 1}` : p.defaultName;
+
+                const card = document.createElement('div');
+                card.className = "bg-black/10 p-3 border-2 border-[#5C3A21] flex flex-col gap-2";
+                
+                card.innerHTML = `
+                    <div class="flex items-center justify-between">
+                        <span class="text-sm font-bold flex items-center gap-1.5" id="p-badge-preview-${idx}">
+                            <span class="w-3.5 h-3.5 ${colorTheme.bgClass} border border-black inline-block" id="p-color-dot-${idx}"></span> ผู้เล่นที่ ${idx + 1}
+                        </span>
+                        <label class="text-xs font-bold cursor-pointer flex items-center gap-1.5 text-[#3B2414] bg-[#FFF3D6] px-2 py-1 border border-[#5C3A21]">
+                            <input type="checkbox" id="p-bot-${idx}" ${isBotDefault ? 'checked' : ''} class="focus:ring-0 cursor-pointer w-3.5 h-3.5">
+                            <span>🤖 เปิดบอท (AI)</span>
+                        </label>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-1.5">
+                        <input type="text" id="p-name-${idx}" value="${defaultName}" placeholder="กรอกชื่อผู้เล่น..." 
+                            class="col-span-1 sm:col-span-1 px-2 py-2 text-sm font-bold">
+                        
+                        <button type="button" onclick="openIconPicker(${idx})" id="p-symbol-btn-${idx}"
+                            class="col-span-1 sm:col-span-1 px-2 py-2 text-sm font-bold bg-[#E8DFCE] hover:bg-[#FFF3D6] border-2 border-[#5C3A21] flex items-center justify-between gap-1 transition">
+                            <span id="p-symbol-disp-${idx}" class="text-base font-bold">${p.symbol}</span>
+                            <span class="text-[11px] font-semibold text-[#5C3A21]">เปลี่ยน 🎨</span>
+                        </button>
+                        <input type="hidden" id="p-symbol-${idx}" value="${p.symbol}">
+
+                        <select id="p-color-${idx}" onchange="updatePlayerColorPreview(${idx})" class="col-span-1 sm:col-span-1 px-1 py-2 text-sm font-bold">
+                            ${COLOR_OPTIONS.map((c, cIdx) => `<option value="${cIdx}" ${cIdx === p.colorIndex ? 'selected' : ''}>${c.name}</option>`).join('')}
+                        </select>
+                    </div>
+                    <div id="p-warning-${idx}" class="hidden text-[11px] font-bold text-white bg-[#E53935] px-2 py-1 border border-[#68100E] flex items-center gap-1.5">
+                        <i class="fas fa-triangle-exclamation"></i> <span></span>
+                    </div>
+                `;
+                container.appendChild(card);
+            }
+
+            updateWinCountOptions();
+            checkPlayerDuplicates();
+        }
+
+        // Detects players sharing the same icon or the same color and warns so nobody
+        // ends up confusing pieces on the board mid-match.
+        function checkPlayerDuplicates() {
+            const slotsToRender = localPlayerCount === 1 ? 2 : localPlayerCount;
+            const symbolCounts = {};
+            const colorCounts = {};
+
+            for (let idx = 0; idx < slotsToRender; idx++) {
+                const symEl = document.getElementById(`p-symbol-${idx}`);
+                const colorEl = document.getElementById(`p-color-${idx}`);
+                if (!symEl || !colorEl) continue;
+                const sym = symEl.value;
+                const col = colorEl.value;
+                symbolCounts[sym] = (symbolCounts[sym] || 0) + 1;
+                colorCounts[col] = (colorCounts[col] || 0) + 1;
+            }
+
+            for (let idx = 0; idx < slotsToRender; idx++) {
+                const symEl = document.getElementById(`p-symbol-${idx}`);
+                const colorEl = document.getElementById(`p-color-${idx}`);
+                const warnBox = document.getElementById(`p-warning-${idx}`);
+                if (!symEl || !colorEl || !warnBox) continue;
+
+                const dupSymbol = symbolCounts[symEl.value] > 1;
+                const dupColor = colorCounts[colorEl.value] > 1;
+
+                if (dupSymbol || dupColor) {
+                    let msg = 'ซ้ำกับผู้เล่นอื่น: ';
+                    const parts = [];
+                    if (dupSymbol) parts.push('สัญลักษณ์');
+                    if (dupColor) parts.push('สี');
+                    msg += parts.join(' และ ') + ' — เปลี่ยนเพื่อไม่ให้สับสนกลางเกม';
+                    warnBox.querySelector('span').textContent = msg;
+                    warnBox.classList.remove('hidden');
+                } else {
+                    warnBox.classList.add('hidden');
+                }
+            }
+        }
+
+        function randomizeAllPlayers() {
+            sound.playTick();
+            const slotsToRender = localPlayerCount === 1 ? 2 : localPlayerCount;
+
+            // Shuffle a copy of the symbol list so nobody gets a duplicate icon,
+            // and cycle through distinct colors too.
+            const shuffledSymbols = [...ALL_SYMBOLS].sort(() => Math.random() - 0.5);
+            const shuffledColors = [...Array(COLOR_OPTIONS.length).keys()].sort(() => Math.random() - 0.5);
+
+            for (let idx = 0; idx < slotsToRender; idx++) {
+                const p1Name = RANDOM_NAMES[0][Math.floor(Math.random() * RANDOM_NAMES[0].length)];
+                const p2Name = RANDOM_NAMES[1][Math.floor(Math.random() * RANDOM_NAMES[1].length)];
+                const randomSym = shuffledSymbols[idx % shuffledSymbols.length];
+                const randomColorIdx = shuffledColors[idx % shuffledColors.length];
+
+                const nameInput = document.getElementById(`p-name-${idx}`);
+                const symDisp = document.getElementById(`p-symbol-disp-${idx}`);
+                const symInput = document.getElementById(`p-symbol-${idx}`);
+                const colorSelect = document.getElementById(`p-color-${idx}`);
+
+                if (nameInput) nameInput.value = `${p1Name} ${p2Name}`;
+                if (symDisp) symDisp.textContent = randomSym;
+                if (symInput) symInput.value = randomSym;
+                if (colorSelect) colorSelect.value = randomColorIdx;
+                updatePlayerColorPreview(idx);
+            }
+            checkPlayerDuplicates();
+        }
+
+        function switchOnlineTab(tab) {
+            sound.playTick();
+            const joinBtn = document.getElementById('tab-btn-join');
+            const createBtn = document.getElementById('tab-btn-create');
+            const joinPanel = document.getElementById('online-join-panel');
+            const createPanel = document.getElementById('online-create-panel');
+
+            if (tab === 'join') {
+                joinBtn.className = "py-2.5 font-bold text-xs sm:text-sm border-2 border-[#5C3A21] bg-[#557A2B] text-white shadow-sm flex items-center justify-center gap-2 transition";
+                createBtn.className = "py-2.5 font-bold text-xs sm:text-sm border-2 border-[#5C3A21] bg-[#8A5A36] text-white opacity-80 hover:opacity-100 flex items-center justify-center gap-2 transition";
+                joinPanel.classList.remove('hidden');
+                createPanel.classList.add('hidden');
+            } else {
+                createBtn.className = "py-2.5 font-bold text-xs sm:text-sm border-2 border-[#5C3A21] bg-[#3B7EA1] text-white shadow-sm flex items-center justify-center gap-2 transition";
+                joinBtn.className = "py-2.5 font-bold text-xs sm:text-sm border-2 border-[#5C3A21] bg-[#8A5A36] text-white opacity-80 hover:opacity-100 flex items-center justify-center gap-2 transition";
+                createPanel.classList.remove('hidden');
+                joinPanel.classList.add('hidden');
+            }
+        }
+
+        function openIconPicker(playerIdx) {
+            isPickingForHost = false;
+            isPickingForJoin = false;
+            currentPickingPlayerIdx = playerIdx;
+            const nameInput = document.getElementById(`p-name-${playerIdx}`);
+            const playerName = nameInput && nameInput.value.trim() ? nameInput.value.trim() : `ผู้เล่น ${playerIdx + 1}`;
+            
+            const titleEl = document.getElementById('icon-picker-player-name');
+            if (titleEl) titleEl.textContent = playerName;
+
+            filterIcons('all');
+
+            const modal = document.getElementById('icon-picker-modal');
+            if (modal) modal.classList.remove('hidden');
+        }
+
+        function openIconPickerForHost() {
+            isPickingForHost = true;
+            isPickingForJoin = false;
+            currentPickingPlayerIdx = null;
+            const nameInput = document.getElementById('host-player-name');
+            const playerName = nameInput && nameInput.value.trim() ? nameInput.value.trim() : 'Host Master';
+
+            const titleEl = document.getElementById('icon-picker-player-name');
+            if (titleEl) titleEl.textContent = playerName;
+
+            filterIcons('all');
+
+            const modal = document.getElementById('icon-picker-modal');
+            if (modal) modal.classList.remove('hidden');
+        }
+
+        function openIconPickerForJoin() {
+            isPickingForHost = false;
+            isPickingForJoin = true;
+            currentPickingPlayerIdx = null;
+            const nameInput = document.getElementById('join-modal-player-name');
+            const playerName = nameInput && nameInput.value.trim() ? nameInput.value.trim() : 'Guest Player';
+
+            const titleEl = document.getElementById('icon-picker-player-name');
+            if (titleEl) titleEl.textContent = playerName;
+
+            filterIcons('all');
+
+            const modal = document.getElementById('icon-picker-modal');
+            if (modal) modal.classList.remove('hidden');
+        }
+
+        function closeIconPicker() {
+            const modal = document.getElementById('icon-picker-modal');
+            if (modal) modal.classList.add('hidden');
+        }
+
+        function filterIcons(cat) {
+            currentIconCategory = cat;
+
+            const btnAll = document.getElementById('cat-btn-all');
+            const btnMc = document.getElementById('cat-btn-mc');
+            const btnIos = document.getElementById('cat-btn-ios');
+
+            [btnAll, btnMc, btnIos].forEach(b => {
+                if (!b) return;
+                b.className = "flex-1 py-1 bg-[#8A5A36] text-white border-2 border-[#3B2414] hover:bg-[#A06B42] text-center opacity-80 transition";
+            });
+
+            if (cat === 'mc') {
+                currentIconList = MC_SYMBOLS;
+                if (btnMc) btnMc.className = "flex-1 py-1 bg-[#557A2B] text-white border-2 border-[#2F4518] text-center shadow-xs transition";
+            } else if (cat === 'ios') {
+                currentIconList = IOS_SYMBOLS;
+                if (btnIos) btnIos.className = "flex-1 py-1 bg-[#557A2B] text-white border-2 border-[#2F4518] text-center shadow-xs transition";
+            } else {
+                currentIconList = ALL_SYMBOLS;
+                if (btnAll) btnAll.className = "flex-1 py-1 bg-[#557A2B] text-white border-2 border-[#2F4518] text-center shadow-xs transition";
+            }
+
+            iconCurrentPage = 0;
+            renderIconGrid();
+        }
+
+        function changeIconPage(delta) {
+            const totalPages = Math.ceil(currentIconList.length / ICONS_PER_PAGE);
+            const newPage = iconCurrentPage + delta;
+            if (newPage >= 0 && newPage < totalPages) {
+                iconCurrentPage = newPage;
+                renderIconGrid();
+            }
+        }
+
+        function renderIconGrid() {
+            const grid = document.getElementById('icon-grid');
+            if (!grid) return;
+            grid.innerHTML = '';
+
+            const startIdx = iconCurrentPage * ICONS_PER_PAGE;
+            const pageIcons = currentIconList.slice(startIdx, startIdx + ICONS_PER_PAGE);
+            const totalPages = Math.ceil(currentIconList.length / ICONS_PER_PAGE) || 1;
+
+            pageIcons.forEach(sym => {
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = "w-9 h-9 text-lg flex items-center justify-center bg-[#E8DFCE] hover:bg-[#FFF3D6] border-2 border-[#5C3A21] hover:border-[#557A2B] transition";
+                btn.textContent = sym;
+                btn.onclick = () => selectIcon(sym);
+                grid.appendChild(btn);
+            });
+
+            const indicator = document.getElementById('icon-page-indicator');
+            if (indicator) indicator.textContent = `หน้า ${iconCurrentPage + 1} / ${totalPages}`;
+
+            const prevBtn = document.getElementById('icon-prev-page');
+            const nextBtn = document.getElementById('icon-next-page');
+            if (prevBtn) prevBtn.disabled = (iconCurrentPage === 0);
+            if (nextBtn) nextBtn.disabled = (iconCurrentPage >= totalPages - 1);
+        }
+
+        function selectIcon(symbol) {
+            if (isPickingForHost) {
+                const disp = document.getElementById('host-symbol-disp');
+                const input = document.getElementById('host-symbol');
+                if (disp) disp.textContent = symbol;
+                if (input) input.value = symbol;
+            } else if (isPickingForJoin) {
+                const disp = document.getElementById('join-modal-symbol-disp');
+                const input = document.getElementById('join-modal-symbol');
+                if (disp) disp.textContent = symbol;
+                if (input) input.value = symbol;
+            } else if (currentPickingPlayerIdx !== null) {
+                const disp = document.getElementById(`p-symbol-disp-${currentPickingPlayerIdx}`);
+                const input = document.getElementById(`p-symbol-${currentPickingPlayerIdx}`);
+                if (disp) disp.textContent = symbol;
+                if (input) input.value = symbol;
+                checkPlayerDuplicates();
+            }
+            closeIconPicker();
+        }
+
+        function updatePlayerColorPreview(playerIdx) {
+            const colorSelect = document.getElementById(`p-color-${playerIdx}`);
+            if (!colorSelect) return;
+            const colorIndex = parseInt(colorSelect.value) || 0;
+            const theme = COLOR_OPTIONS[colorIndex % COLOR_OPTIONS.length];
+
+            const colorDot = document.getElementById(`p-color-dot-${playerIdx}`);
+            if (colorDot) {
+                colorDot.className = `w-3.5 h-3.5 ${theme.bgClass} border border-black inline-block`;
+            }
+            checkPlayerDuplicates();
+        }
+
+        function updateWinCountOptions() {
+            const sizeSelect = document.getElementById('setting-grid-size');
+            const winSelect = document.getElementById('setting-win-count');
+            if (!sizeSelect || !winSelect) return;
+
+            const size = parseInt(sizeSelect.value) || 8;
+            const previousVal = parseInt(winSelect.value) || 4;
+
+            winSelect.innerHTML = '';
+            
+            const maxWin = Math.min(size, 8);
+            for (let w = 3; w <= maxWin; w++) {
+                const option = document.createElement('option');
+                option.value = w;
+                option.textContent = `${w} ตัวเรียงกัน`;
+                if (w === previousVal || (previousVal > maxWin && w === maxWin)) {
+                    option.selected = true;
+                }
+                winSelect.appendChild(option);
+            }
+
+            if (!winSelect.value && winSelect.options.length > 0) {
+                winSelect.options[Math.min(1, winSelect.options.length - 1)].selected = true;
+            }
+        }
+
+        function toggleCustomTimerMode() {
+            const isCustom = document.getElementById('chk-custom-timer').checked;
+            const timerSelect = document.getElementById('setting-timer');
+            const customBox = document.getElementById('custom-timer-input-box');
+
+            if (isCustom) {
+                timerSelect.classList.add('hidden');
+                customBox.classList.remove('hidden');
+            } else {
+                timerSelect.classList.remove('hidden');
+                customBox.classList.add('hidden');
+            }
+        }
+
+        function toggleDayNight() {
+            document.body.classList.toggle('night-mode');
+            const icon = document.getElementById('theme-icon');
+            const text = document.getElementById('theme-text');
+            if (document.body.classList.contains('night-mode')) {
+                icon.textContent = '🌙';
+                text.textContent = 'กลางคืน';
+            } else {
+                icon.textContent = '☀️';
+                text.textContent = 'กลางวัน';
+            }
+        }
+
+        function setOnlinePlayerCount(count) {
+            onlineTargetPlayerCount = count;
+            [2, 3, 4].forEach(c => {
+                const btn = document.getElementById(`btn-count-${c}`);
+                if (!btn) return;
+                if (c === count) {
+                    btn.className = "py-2 font-bold text-xs border-2 border-[#5C3A21] bg-[#557A2B] text-white shadow-sm transition";
+                } else {
+                    btn.className = "py-2 font-bold text-xs border-2 border-[#5C3A21] bg-[#8A5A36] text-white opacity-80 hover:opacity-100 transition";
+                }
+            });
+        }
+
+        function generateNewRoomCode() {
+            const code = Math.floor(1000 + Math.random() * 9000).toString();
+            const input = document.getElementById('create-room-code');
+            if (input) input.value = code;
+        }
+
+        function openCreateHostModal() {
+            sound.playTick();
+            const roomCode = document.getElementById('create-room-code').value;
+            const roomPass = document.getElementById('create-room-pass').value.trim();
+
+            if (!roomPass || roomPass.length !== 4) {
+                alert("กรุณาระบุ Password ให้ครบ 4 หลัก");
+                return;
+            }
+
+            onlineRoomCode = roomCode;
+            onlineRoomPass = roomPass;
+            isOnlineHost = true;
+
+            const colorSelect = document.getElementById('host-color-select');
+            if (colorSelect) {
+                colorSelect.innerHTML = COLOR_OPTIONS.map((c, idx) => `<option value="${idx}">${c.name}</option>`).join('');
+            }
+
+            document.getElementById('host-name-modal').classList.remove('hidden');
+        }
+
+        function closeHostNameModal() {
+            document.getElementById('host-name-modal').classList.add('hidden');
+        }
+
+        function confirmCreateRoom() {
+            const nameInput = document.getElementById('host-player-name').value.trim() || 'Host Master';
+            const symbol = document.getElementById('host-symbol').value || '⛏️';
+            const colorIdx = parseInt(document.getElementById('host-color-select').value) || 0;
+
+            const theme = COLOR_OPTIONS[colorIdx];
+
+            players = [
+                {
+                    id: 0,
+                    name: nameInput,
+                    symbol: symbol,
+                    colorIndex: colorIdx,
+                    bgClass: theme.bgClass,
+                    textClass: theme.textClass,
+                    borderClass: theme.borderClass,
+                    pitch: theme.pitch,
+                    isBot: false,
+                    score: 0,
+                    isHost: true
+                }
+            ];
+
+            // Fill empty slots as waiting or available for online
+            for (let i = 1; i < onlineTargetPlayerCount; i++) {
+                const defaultTheme = COLOR_OPTIONS[i % COLOR_OPTIONS.length];
+                players.push({
+                    id: i,
+                    name: `ผู้เล่น ${i + 1} (รอร่วมห้อง...)`,
+                    symbol: DEFAULT_PLAYERS_CONFIG[i].symbol,
+                    colorIndex: i,
+                    bgClass: defaultTheme.bgClass,
+                    textClass: defaultTheme.textClass,
+                    borderClass: defaultTheme.borderClass,
+                    pitch: defaultTheme.pitch,
+                    isBot: false,
+                    score: 0,
+                    isHost: false,
+                    isPlaceholder: true
+                });
+            }
+
+            myOnlineSlotIndex = 0;
+            closeHostNameModal();
+            enterOnlineWaitingLobby();
+        }
+
+        function joinOnlineRoom() {
+            sound.playTick();
+            const roomCode = document.getElementById('join-room-code').value.trim();
+            const roomPass = document.getElementById('join-room-pass').value.trim();
+
+            if (!roomCode || roomCode.length !== 4) {
+                alert("กรุณากรอกเลขห้อง 4 หลัก");
+                return;
+            }
+            if (!roomPass || roomPass.length !== 4) {
+                alert("กรุณากรอก Password 4 หลัก");
+                return;
+            }
+
+            onlineRoomCode = roomCode;
+            onlineRoomPass = roomPass;
+            isOnlineHost = false;
+
+            // Populate color options for join modal
+            const colorSelect = document.getElementById('join-modal-color-select');
+            if (colorSelect) {
+                colorSelect.innerHTML = COLOR_OPTIONS.map((c, idx) => `<option value="${idx}" ${idx === 1 ? 'selected' : ''}>${c.name}</option>`).join('');
+            }
+
+            // Open Join Player Modal to ask for Name, Symbol & Color
+            document.getElementById('join-player-modal').classList.remove('hidden');
+        }
+
+        function closeJoinPlayerModal() {
+            document.getElementById('join-player-modal').classList.add('hidden');
+        }
+
+        function confirmJoinRoom() {
+            sound.playTick();
+            const playerName = document.getElementById('join-modal-player-name').value.trim() || 'Guest Player';
+            const symbol = document.getElementById('join-modal-symbol').value || '🗡️';
+            const colorIdx = parseInt(document.getElementById('join-modal-color-select').value) || 1;
+
+            const theme = COLOR_OPTIONS[colorIdx % COLOR_OPTIONS.length];
+
+            // Keep only the local player's provisional data until the Host accepts the join.
+            players = [{
+                id: 1, name: playerName, symbol, colorIndex: colorIdx, bgClass: theme.bgClass,
+                textClass: theme.textClass, borderClass: theme.borderClass, pitch: theme.pitch,
+                isBot: false, score: 0, isHost: false, isPlaceholder: false
+            }];
+            myOnlineSlotIndex = 1;
+            closeJoinPlayerModal();
+            enterOnlineWaitingLobby();
+        }
+
+        function enterOnlineWaitingLobby() {
+            document.getElementById('online-setup-screen').classList.add('hidden');
+            document.getElementById('online-lobby-waiting').classList.remove('hidden');
+
+            document.getElementById('display-online-room-code').textContent = onlineRoomCode;
+            document.getElementById('display-online-room-pass').textContent = onlineRoomPass;
+
+            const hostPanel = document.getElementById('host-settings-panel');
+            const startBtn = document.getElementById('btn-start-online-game');
+            if (isOnlineHost) {
+                hostPanel.classList.remove('hidden');
+                startBtn.classList.remove('hidden');
+            } else {
+                hostPanel.classList.add('hidden');
+                startBtn.classList.add('hidden');
+            }
+
+            renderOnlineSlots();
+            setupPeerNetworking();
+        }
+
+        function getRoomPeerId() {
+            return `xo-mooaod-${onlineRoomCode}`;
+        }
+
+        function makePlayerPayload(player) {
+            return {
+                id: player.id, name: player.name, symbol: player.symbol, colorIndex: player.colorIndex,
+                bgClass: player.bgClass, textClass: player.textClass, borderClass: player.borderClass,
+                pitch: player.pitch, isBot: !!player.isBot, score: player.score || 0,
+                isHost: !!player.isHost, isPlaceholder: !!player.isPlaceholder, peerId: player.peerId || null
+            };
+        }
+
+        function getOnlineGameState() {
+            return {
+                players: players.map(makePlayerPayload), board, moveHistory, currentTurn, startingPlayerIndex,
+                gridSize, winCount, turnTimerDuration, isGameActive, lastWinnerIndex,
+                roundResult: onlineLastResult, turnStartedAt: onlineTurnStartedAt
+            };
+        }
+
+        function closePeerNetworking() {
+            try { if (onlineHostConnection) onlineHostConnection.close(); } catch (e) {}
+            onlineHostConnection = null;
+            onlineHostConnections.forEach(conn => { try { conn.close(); } catch (e) {} });
+            onlineHostConnections.clear();
+            try { if (onlinePeer) onlinePeer.destroy(); } catch (e) {}
+            onlinePeer = null;
+            onlinePeerId = '';
+        }
+
+        function setupPeerNetworking() {
+            closePeerNetworking();
+            if (!window.Peer) {
+                alert('ไม่สามารถโหลดระบบ Online Multiplayer ได้ กรุณาเช็กอินเทอร์เน็ตแล้วรีเฟรชหน้า');
+                return;
+            }
+
+            if (isOnlineHost) {
+                const roomPeerId = getRoomPeerId();
+                onlinePeer = new Peer(roomPeerId);
+                onlinePeer.on('open', id => {
+                    onlinePeerId = id;
+                    renderOnlineSlots();
+                });
+                onlinePeer.on('connection', conn => {
+                    conn.on('open', () => { onlineHostConnections.set(conn.peer, conn); });
+                    conn.on('data', data => handleHostPeerMessage(conn, data));
+                    conn.on('close', () => {
+                        onlineHostConnections.delete(conn.peer);
+                        const idx = players.findIndex(p => p.peerId === conn.peer);
+                        if (idx > 0) {
+                            players[idx].name = `ผู้เล่น ${idx + 1} (รอร่วมห้อง...)`;
+                            players[idx].isPlaceholder = true;
+                            players[idx].peerId = null;
+                            players[idx].isBot = false;
+                            broadcastRoomState();
+                            renderOnlineSlots();
+                        }
+                    });
+                });
+                onlinePeer.on('error', err => {
+                    console.error(err);
+                    if (err.type === 'unavailable-id') alert('เลขห้องนี้มีคนใช้อยู่แล้ว กรุณาสุ่มเลขห้องใหม่');
+                    else alert('การเชื่อมต่อห้องมีปัญหา กรุณาลองสร้างห้องใหม่');
+                });
+            } else {
+                onlinePeer = new Peer();
+                onlinePeer.on('open', id => {
+                    onlinePeerId = id;
+                    const conn = onlinePeer.connect(getRoomPeerId(), { reliable: true });
+                    onlineHostConnection = conn;
+                    conn.on('open', () => {
+                        conn.send({ type: 'join-request', pass: onlineRoomPass, player: {
+                            name: players[1]?.name || document.getElementById('join-modal-player-name')?.value || 'Guest Player',
+                            symbol: players[1]?.symbol || '🗡️', colorIndex: players[1]?.colorIndex ?? 1, peerId: id
+                        }});
+                    });
+                    conn.on('data', handleGuestPeerMessage);
+                    conn.on('close', () => { alert('Host ปิดห้องหรือการเชื่อมต่อหลุด'); goToModeSelection(); });
+                    conn.on('error', () => alert('เชื่อมต่อห้องไม่สำเร็จ กรุณาตรวจสอบเลขห้อง/รหัสผ่าน'));
+                });
+                onlinePeer.on('error', err => {
+                    console.error(err);
+                    if (err.type === 'peer-unavailable') alert('ไม่พบห้องนี้ หรือ Host ยังเปิดห้องไม่สำเร็จ');
+                    else alert('การเชื่อมต่อ Online มีปัญหา กรุณาลองใหม่');
+                });
+            }
+        }
+
+        function handleHostPeerMessage(conn, data) {
+            if (!data) return;
+            if (data.type === 'join-request') {
+                if (data.pass !== onlineRoomPass) { conn.send({ type: 'join-denied', reason: 'รหัสผ่านไม่ถูกต้อง' }); conn.close(); return; }
+                const idx = players.findIndex((p, i) => i > 0 && p.isPlaceholder);
+                if (idx === -1) { conn.send({ type: 'join-denied', reason: 'ห้องเต็มแล้ว' }); conn.close(); return; }
+                const incoming = data.player || {};
+                const theme = COLOR_OPTIONS[(parseInt(incoming.colorIndex) || 0) % COLOR_OPTIONS.length];
+                players[idx] = {
+                    id: idx, name: String(incoming.name || `ผู้เล่น ${idx + 1}`).slice(0, 24), symbol: incoming.symbol || '🙂',
+                    colorIndex: parseInt(incoming.colorIndex) || 0, bgClass: theme.bgClass, textClass: theme.textClass,
+                    borderClass: theme.borderClass, pitch: theme.pitch, isBot: false, score: players[idx].score || 0,
+                    isHost: false, isPlaceholder: false, peerId: conn.peer
+                };
+                onlineHostConnections.set(conn.peer, conn);
+                conn.send({ type: 'join-accepted', slotIndex: idx, state: getOnlineGameState() });
+                broadcastRoomState();
+                renderOnlineSlots();
+                return;
+            }
+            const idx = players.findIndex(p => p.peerId === conn.peer);
+            if (idx < 0) return;
+            if (data.type === 'move-request') {
+                if (!isGameActive || currentTurn !== idx || players[idx].isBot) return;
+                const r = Number(data.r), c = Number(data.c);
+                if (!Number.isInteger(r) || !Number.isInteger(c) || r < 0 || c < 0 || r >= gridSize || c >= gridSize || board[r][c] !== null) return;
+                executeMove(r, c, true);
+                broadcastGameState();
+            } else if (data.type === 'leave-room') {
+                conn.close();
+            }
+        }
+
+        function handleGuestPeerMessage(data) {
+            if (!data) return;
+            if (data.type === 'join-denied') {
+                alert(data.reason || 'ไม่สามารถเข้าห้องได้');
+                closePeerNetworking();
+                goToModeSelection();
+                return;
+            }
+            if (data.type === 'join-accepted' || data.type === 'room-state' || data.type === 'game-state') {
+                if (data.slotIndex !== undefined) myOnlineSlotIndex = data.slotIndex;
+                if (data.state) applyOnlineGameState(data.state);
+                document.getElementById('display-online-room-code').textContent = onlineRoomCode;
+                return;
+            }
+            if (data.type === 'start-battle') {
+                applyOnlineGameState(data.state);
+                document.getElementById('online-lobby-waiting').classList.add('hidden');
+                document.getElementById('game-screen').classList.remove('hidden');
+                return;
+            }
+        }
+
+        function broadcastRoomState() {
+            const message = { type: 'room-state', state: getOnlineGameState() };
+            onlineHostConnections.forEach(conn => { try { conn.send(message); } catch (e) {} });
+        }
+
+        function broadcastGameState() {
+            if (!isOnlineHost) return;
+            const message = { type: 'game-state', state: getOnlineGameState() };
+            onlineHostConnections.forEach(conn => { try { conn.send(message); } catch (e) {} });
+        }
+
+        function applyOnlineGameState(state) {
+            if (!state) return;
+            players = Array.isArray(state.players) ? state.players : players;
+            board = Array.isArray(state.board) ? state.board : board;
+            moveHistory = Array.isArray(state.moveHistory) ? state.moveHistory : [];
+            currentTurn = Number.isInteger(state.currentTurn) ? state.currentTurn : currentTurn;
+            startingPlayerIndex = Number.isInteger(state.startingPlayerIndex) ? state.startingPlayerIndex : startingPlayerIndex;
+            gridSize = state.gridSize || gridSize;
+            winCount = state.winCount || winCount;
+            turnTimerDuration = state.turnTimerDuration ?? turnTimerDuration;
+            isGameActive = !!state.isGameActive;
+            lastWinnerIndex = state.lastWinnerIndex ?? null;
+            onlineLastResult = state.roundResult || null;
+            onlineTurnStartedAt = state.turnStartedAt || Date.now();
+            renderBoardFromState();
+            renderScoreboard();
+            updateTurnDisplay();
+            renderOnlineSlots();
+            startTurnTimer(true);
+            if (onlineLastResult) showOnlineRoundResult(onlineLastResult);
+            else document.getElementById('win-modal').classList.add('hidden');
+        }
+
+        function renderBoardFromState() {
+            renderBoard();
+            for (let r = 0; r < gridSize; r++) {
+                for (let c = 0; c < gridSize; c++) {
+                    const id = board[r]?.[c];
+                    if (id === null || id === undefined) continue;
+                    const p = players.find(x => x.id === id);
+                    const cell = document.getElementById(`cell-${r}-${c}`);
+                    if (cell && p) { cell.classList.add('occupied'); cell.innerHTML = `<span>${p.symbol}</span>`; }
+                }
+            }
+            if (onlineLastResult?.type === 'win' && Array.isArray(onlineLastResult.winLine)) {
+                onlineLastResult.winLine.forEach(pos => document.getElementById(`cell-${pos.r}-${pos.c}`)?.classList.add('winning-cell'));
+            }
+        }
+
+        function showOnlineRoundResult(result) {
+            const modal = document.getElementById('win-modal');
+            if (!modal) return;
+            const avatar = document.getElementById('win-avatar-container');
+            if (result.type === 'win') {
+                const p = players.find(x => x.id === result.playerId);
+                if (!p) return;
+                avatar.className = `w-14 h-14 mx-auto border-2 flex items-center justify-center text-3xl mb-3 ${p.bgClass} text-white`;
+                avatar.textContent = p.symbol;
+                document.getElementById('win-title').textContent = `🏆 ${p.name} ชนะ!`;
+                document.getElementById('win-subtitle').textContent = `เรียงสัญลักษณ์ครบบรรทัด ${winCount} ตัวสำเร็จ`;
+            } else {
+                avatar.className = 'w-14 h-14 mx-auto border-2 flex items-center justify-center text-3xl mb-3 bg-[#8A5A36] text-white';
+                avatar.textContent = '🤝';
+                document.getElementById('win-title').textContent = 'เสมอกัน!';
+                document.getElementById('win-subtitle').textContent = 'ตารางเต็มแล้วโดยไม่มีผู้ชนะ';
+            }
+            modal.classList.remove('hidden');
+        }
+
+        function syncOnlineSettings() {
+            if (!isOnlineHost) return;
+            gridSize = parseInt(document.getElementById('online-grid-size').value) || 8;
+            winCount = parseInt(document.getElementById('online-win-count').value) || 4;
+            const isCustomTimer = document.getElementById('chk-online-custom-timer').checked;
+            turnTimerDuration = isCustomTimer ? (parseInt(document.getElementById('online-timer-custom').value) || 15) : parseInt(document.getElementById('online-timer').value);
+            broadcastRoomState();
+        }
+
+        function toggleOnlineCustomTimerMode() {
+            const isCustom = document.getElementById('chk-online-custom-timer').checked;
+            document.getElementById('online-timer').classList.toggle('hidden', isCustom);
+            document.getElementById('online-custom-timer-input-box').classList.toggle('hidden', !isCustom);
+            document.getElementById('online-custom-timer-input-box').classList.toggle('flex', isCustom);
+            syncOnlineSettings();
+        }
+
+        function copyOnlineRoomInfo() {
+            sound.playTick();
+            const textToCopy = `ห้อง XO: ${onlineRoomCode} | Password: ${onlineRoomPass}`;
+            navigator.clipboard?.writeText(textToCopy).then(() => alert(`คัดลอกข้อมูลห้องเรียบร้อย:\n${textToCopy}`)).catch(() => alert(textToCopy));
+        }
+
+        function leaveOnlineRoom() {
+            sound.playTick();
+            if (isOnlineHost) broadcastRoomState();
+            if (onlineHostConnection) { try { onlineHostConnection.send({ type: 'leave-room' }); } catch (e) {} }
+            closePeerNetworking();
+            goToModeSelection();
+        }
+
+        function startOnlineBattle() {
+            sound.playTick();
+            if (!isOnlineHost) return;
+            gridSize = parseInt(document.getElementById('online-grid-size').value) || 8;
+            winCount = parseInt(document.getElementById('online-win-count').value) || 4;
+            const isCustomTimer = document.getElementById('chk-online-custom-timer').checked;
+            turnTimerDuration = isCustomTimer ? (parseInt(document.getElementById('online-timer-custom').value) || 15) : parseInt(document.getElementById('online-timer').value);
+            players.forEach((p, idx) => {
+                if (p.isPlaceholder) { p.isBot = true; p.name = `บอท AI ${idx + 1}`; p.isPlaceholder = false; }
+            });
+            document.getElementById('online-lobby-waiting').classList.add('hidden');
+            document.getElementById('game-screen').classList.remove('hidden');
+            resetRound();
+            broadcastGameState();
+        }
+
+        // Compatibility wrapper for any legacy calls.
+        function broadcastState(type, payload) {
+            if (!isOnlineHost) return;
+            if (type === 'update-slots') broadcastRoomState();
+            else if (type === 'start-battle') broadcastGameState();
+            else if (type === 'make-move') broadcastGameState();
+            else if (type === 'update-config') broadcastRoomState();
+        }
+
+        function startGameFromLobby() {
+            gridSize = parseInt(document.getElementById('setting-grid-size').value) || 8;
+            winCount = parseInt(document.getElementById('setting-win-count').value) || 4;
+            
+            const isCustomTimer = document.getElementById('chk-custom-timer').checked;
+            if (isCustomTimer) {
+                turnTimerDuration = parseInt(document.getElementById('setting-timer-custom').value) || 15;
+            } else {
+                turnTimerDuration = parseInt(document.getElementById('setting-timer').value);
+            }
+
+            players = [];
+            const slotsToRender = localPlayerCount === 1 ? 2 : localPlayerCount;
+
+            for (let i = 0; i < slotsToRender; i++) {
+                const nameEl = document.getElementById(`p-name-${i}`);
+                if (!nameEl) continue;
+
+                const nameInput = nameEl.value.trim() || `ผู้เล่น ${i + 1}`;
+                const symbolInput = document.getElementById(`p-symbol-${i}`).value;
+                const colorIndex = parseInt(document.getElementById(`p-color-${i}`).value);
+                const isBot = document.getElementById(`p-bot-${i}`).checked;
+                const theme = COLOR_OPTIONS[colorIndex % COLOR_OPTIONS.length];
+
+                players.push({
+                    id: i,
+                    name: nameInput,
+                    symbol: symbolInput,
+                    colorIndex: colorIndex,
+                    bgClass: theme.bgClass,
+                    textClass: theme.textClass,
+                    borderClass: theme.borderClass,
+                    pitch: theme.pitch,
+                    isBot: isBot,
+                    score: 0
+                });
+            }
+
+            document.getElementById('rule-win-count').textContent = winCount;
+
+            startingPlayerIndex = 0;
+            currentTurn = 0;
+            lastWinnerIndex = null;
+
+            document.getElementById('lobby-screen').classList.add('hidden');
+            document.getElementById('game-screen').classList.remove('hidden');
+
+            resetRound();
+        }
+
+        function resetRound() {
+            board = [];
+            for (let r = 0; r < gridSize; r++) {
+                board.push(new Array(gridSize).fill(null));
+            }
+            moveHistory = [];
+            isGameActive = true;
+            onlineLastResult = null;
+            if (gameMode === 'online' && isOnlineHost) onlineTurnStartedAt = Date.now();
+
+            const modal = document.getElementById('win-modal');
+            if (modal) modal.classList.add('hidden');
+
+            document.querySelectorAll('.winning-cell').forEach(el => {
+                el.classList.remove('winning-cell');
+            });
+
+            renderBoard();
+            renderScoreboard();
+            updateTurnDisplay();
+            startTurnTimer();
+
+            if (players[currentTurn] && players[currentTurn].isBot) {
+                setTimeout(makeBotMove, 500);
+            }
+            if (gameMode === 'online' && isOnlineHost) broadcastGameState();
+        }
+
+        function renderScoreboard() {
+            const container = document.getElementById('scoreboard');
+            if (!container) return;
+            container.innerHTML = '';
+            
+            // Adapt grid columns based on active players count (2, 3, or 4)
+            container.className = `w-full grid grid-cols-2 sm:grid-cols-${players.length} gap-2`;
+
+            players.forEach((p, idx) => {
+                const isActive = idx === currentTurn && isGameActive;
+                const card = document.createElement('div');
+                card.className = `mc-card p-2 sm:p-2.5 flex items-center justify-between border transition-all ${
+                    isActive ? 'active-turn-card' : ''
+                }`;
+
+                card.innerHTML = `
+                    <div class="flex items-center gap-2 overflow-hidden">
+                        <div class="w-7 h-7 rounded ${p.bgClass} flex items-center justify-center text-xs font-bold text-white shadow-sm shrink-0 border border-black">
+                            ${p.symbol}
+                        </div>
+                        <div class="truncate">
+                            <div class="text-xs font-bold truncate flex items-center gap-1">
+                                <span>${p.name}</span>
+                                ${p.isBot ? '<i class="fas fa-robot text-[10px] text-[#FCA800]"></i>' : ''}
+                            </div>
+                            <div class="text-[10px] opacity-75">ผู้เล่น ${idx + 1}</div>
+                        </div>
+                    </div>
+                    <div class="text-right shrink-0">
+                        <div class="text-base font-bold font-pixel leading-none">${p.score}</div>
+                        <div class="text-[9px] font-semibold opacity-75">แต้ม</div>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function renderBoard() {
+            const boardEl = document.getElementById('board');
+            boardEl.style.display = 'grid';
+            boardEl.style.gridTemplateColumns = `repeat(${gridSize}, minmax(0, 1fr))`;
+            boardEl.style.gap = '5px';
+            boardEl.innerHTML = '';
+
+            const cellSizeClass = gridSize <= 6 ? 'w-11 h-11 sm:w-13 sm:h-13 text-xl' :
+                                  gridSize <= 8 ? 'w-9 h-9 sm:w-11 sm:h-11 text-lg' :
+                                  'w-7 h-7 sm:w-9 sm:h-9 text-sm';
+
+            for (let r = 0; r < gridSize; r++) {
+                for (let c = 0; c < gridSize; c++) {
+                    const cell = document.createElement('div');
+                    cell.id = `cell-${r}-${c}`;
+                    cell.className = `grid-cell ${cellSizeClass} rounded flex items-center justify-center font-bold shadow-2xs`;
+                    cell.onclick = () => handleCellClick(r, c);
+                    boardEl.appendChild(cell);
+                }
+            }
+        }
+
+        function updateTurnDisplay() {
+            const badge = document.getElementById('turn-indicator-badge');
+            const statusText = document.getElementById('game-status-text');
+            const p = players[currentTurn];
+
+            badge.className = `px-2.5 py-1 font-bold text-xs flex items-center gap-1.5 border ${p.borderClass} ${p.textClass} bg-white shadow-xs`;
+            badge.innerHTML = `<span class="w-2.5 h-2.5 ${p.bgClass} inline-block border border-black"></span> ${p.symbol} ${p.name}`;
+
+            if (p.isBot) {
+                statusText.textContent = 'บอทกำลังคิด...';
+            } else {
+                statusText.textContent = `ตาของ ${p.name}`;
+            }
+        }
+
+        function startTurnTimer() {
+            if (timerInterval) clearInterval(timerInterval);
+
+            const timerWrapper = document.getElementById('timer-wrapper');
+            if (turnTimerDuration === 0) {
+                timerWrapper.classList.add('hidden');
+                return;
+            }
+            timerWrapper.classList.remove('hidden');
+
+            remainingTime = turnTimerDuration;
+            updateTimerUI();
+
+            timerInterval = setInterval(() => {
+                if (!isGameActive) return;
+                remainingTime--;
+                updateTimerUI();
+
+                if (remainingTime <= 3 && remainingTime > 0) {
+                    sound.playTick();
+                }
+
+                if (remainingTime <= 0) {
+                    clearInterval(timerInterval);
+                    if (gameMode !== 'online' || isOnlineHost) handleTimeOut();
+                }
+            }, 1000);
+        }
+
+        function handleTimeOut() {
+            if (!isGameActive) return;
+
+            sound.playUndo();
+            const p = players[currentTurn];
+            
+            const statusText = document.getElementById('game-status-text');
+            if (statusText) {
+                statusText.innerHTML = `<span class="text-[#E53935] font-bold">⏱️ ${p.name} หมดเวลา! ข้ามตา</span>`;
+            }
+
+            currentTurn = (currentTurn + 1) % players.length;
+
+            setTimeout(() => {
+                if (!isGameActive) return;
+                renderScoreboard();
+                updateTurnDisplay();
+                startTurnTimer();
+
+                if (players[currentTurn].isBot && isGameActive) {
+                    setTimeout(makeBotMove, 400);
+                }
+                if (gameMode === 'online' && isOnlineHost) broadcastGameState();
+            }, 800);
+        }
+
+        function updateTimerUI() {
+            const bar = document.getElementById('timer-bar');
+            const text = document.getElementById('timer-text');
+            const pct = Math.max(0, (remainingTime / turnTimerDuration) * 100);
+
+            bar.style.width = `${pct}%`;
+            text.textContent = `${remainingTime}s`;
+
+            if (pct < 30) {
+                bar.className = "bg-[#E53935] h-full w-full transition-all duration-300";
+            } else {
+                bar.className = "bg-[#FCA800] h-full w-full transition-all duration-300";
+            }
+        }
+
+        function handleCellClick(r, c) {
+            if (!isGameActive) return;
+            if (players[currentTurn].isBot) return;
+            if (board[r][c] !== null) return;
+
+            if (gameMode === 'online' && !isOnlineHost) {
+                try { onlineHostConnection?.send({ type: 'move-request', r, c }); } catch (e) {}
+                return;
+            }
+
+            executeMove(r, c);
+        }
+
+        function executeMove(r, c, isRemote = false) {
+            const p = players[currentTurn];
+            board[r][c] = p.id;
+            moveHistory.push({ r, c, playerId: p.id });
+
+            sound.playMove(p.pitch);
+
+            const cell = document.getElementById(`cell-${r}-${c}`);
+            if (cell) {
+                cell.classList.add('occupied');
+                cell.innerHTML = `<span>${p.symbol}</span>`;
+            }
+
+            // Online state is authoritative on the Host. Guest moves are sent as requests.
+            if (!isRemote && gameMode === 'online' && isOnlineHost) {
+                // broadcast after the turn/result calculation below
+            }
+
+            const winLine = checkWin(r, c, p.id);
+            if (winLine) {
+                handleWin(p, winLine);
+                if (gameMode === 'online' && isOnlineHost) broadcastGameState();
+                return;
+            }
+
+            if (checkDraw()) {
+                handleDraw();
+                if (gameMode === 'online' && isOnlineHost) broadcastGameState();
+                return;
+            }
+
+            currentTurn = (currentTurn + 1) % players.length;
+            renderScoreboard();
+            updateTurnDisplay();
+            startTurnTimer();
+
+            if (players[currentTurn].isBot && isGameActive) {
+                setTimeout(makeBotMove, 450);
+            }
+
+            if (gameMode === 'online' && isOnlineHost) broadcastGameState();
+        }
+
+        function makeBotMove() {
+            if (!isGameActive) return;
+
+            const botId = players[currentTurn].id;
+            let targetR = -1, targetC = -1;
+
+            for (let r = 0; r < gridSize; r++) {
+                for (let c = 0; c < gridSize; c++) {
+                    if (board[r][c] === null) {
+                        board[r][c] = botId;
+                        if (checkWin(r, c, botId)) {
+                            targetR = r; targetC = c;
+                            board[r][c] = null;
+                            break;
+                        }
+                        board[r][c] = null;
+                    }
+                }
+                if (targetR !== -1) break;
+            }
+
+            if (targetR === -1) {
+                for (let opp = 0; opp < players.length; opp++) {
+                    if (opp === botId) continue;
+                    for (let r = 0; r < gridSize; r++) {
+                        for (let c = 0; c < gridSize; c++) {
+                            if (board[r][c] === null) {
+                                board[r][c] = opp;
+                                if (checkWin(r, c, opp)) {
+                                    targetR = r; targetC = c;
+                                    board[r][c] = null;
+                                    break;
+                                }
+                                board[r][c] = null;
+                            }
+                        }
+                        if (targetR !== -1) break;
+                    }
+                    if (targetR !== -1) break;
+                }
+            }
+
+            if (targetR === -1) {
+                const emptyCells = [];
+                for (let r = 0; r < gridSize; r++) {
+                    for (let c = 0; c < gridSize; c++) {
+                        if (board[r][c] === null) emptyCells.push({r, c});
+                    }
+                }
+                if (emptyCells.length > 0) {
+                    const choice = emptyCells[Math.floor(Math.random() * emptyCells.length)];
+                    targetR = choice.r;
+                    targetC = choice.c;
+                }
+            }
+
+            if (targetR !== -1 && targetC !== -1) {
+                executeMove(targetR, targetC);
+            }
+        }
+
+        function checkWin(r, c, playerId) {
+            const directions = [
+                [[0, 1], [0, -1]],
+                [[1, 0], [-1, 0]],
+                [[1, 1], [-1, -1]],
+                [[1, -1], [-1, 1]]
+            ];
+
+            for (let d = 0; d < directions.length; d++) {
+                const line = [{r, c}];
+                for (let dir = 0; dir < 2; dir++) {
+                    const [dr, dc] = directions[d][dir];
+                    let nr = r + dr;
+                    let nc = c + dc;
+
+                    while (nr >= 0 && nr < gridSize && nc >= 0 && nc < gridSize && board[nr][nc] === playerId) {
+                        line.push({r: nr, c: nc});
+                        nr += dr;
+                        nc += dc;
+                    }
+                }
+
+                if (line.length >= winCount) {
+                    return line;
+                }
+            }
+            return null;
+        }
+
+        function checkDraw() {
+            for (let r = 0; r < gridSize; r++) {
+                for (let c = 0; c < gridSize; c++) {
+                    if (board[r][c] === null) return false;
+                }
+            }
+            return true;
+        }
+
+        function handleWin(player, winLine) {
+            isGameActive = false;
+            if (timerInterval) clearInterval(timerInterval);
+
+            player.score++;
+            lastWinnerIndex = player.id;
+            onlineLastResult = { type: 'win', playerId: player.id, winLine };
+            renderScoreboard();
+
+            winLine.forEach(pos => {
+                const cell = document.getElementById(`cell-${pos.r}-${pos.c}`);
+                if (cell) {
+                    cell.classList.add('winning-cell');
+                }
+            });
+
+            sound.playWin();
+
+            try {
+                confetti({
+                    particleCount: 70,
+                    spread: 70,
+                    origin: { y: 0.6 }
+                });
+            } catch (e) {}
+
+            setTimeout(() => {
+                const modal = document.getElementById('win-modal');
+                
+                const avatar = document.getElementById('win-avatar-container');
+                avatar.className = `w-14 h-14 mx-auto border-2 flex items-center justify-center text-3xl mb-3 ${player.bgClass} text-white`;
+                avatar.textContent = player.symbol;
+                
+                document.getElementById('win-title').textContent = `🏆 ${player.name} ชนะ!`;
+                document.getElementById('win-subtitle').textContent = `เรียงสัญลักษณ์ครบบรรทัด ${winCount} ตัวสำเร็จ`;
+
+                modal.classList.remove('hidden');
+            }, 600);
+        }
+
+        function handleDraw() {
+            isGameActive = false;
+            if (timerInterval) clearInterval(timerInterval);
+            onlineLastResult = { type: 'draw' };
+
+            const statusText = document.getElementById('game-status-text');
+            statusText.textContent = "🤝 เสมอกัน!";
+
+            setTimeout(() => {
+                const modal = document.getElementById('win-modal');
+                
+                const avatar = document.getElementById('win-avatar-container');
+                avatar.className = `w-14 h-14 mx-auto border-2 flex items-center justify-center text-3xl mb-3 bg-[#8A5A36] text-white`;
+                avatar.textContent = "🤝";
+                
+                document.getElementById('win-title').textContent = "เสมอกัน!";
+                document.getElementById('win-subtitle').textContent = "ตารางเต็มแล้วโดยไม่มีผู้ชนะ";
+
+                modal.classList.remove('hidden');
+            }, 500);
+        }
+
+        function nextRound() {
+            startingPlayerIndex = (startingPlayerIndex + 1) % players.length;
+            currentTurn = startingPlayerIndex;
+            resetRound();
+        }
+
+        function undoMove() {
+            if (moveHistory.length === 0) return;
+
+            sound.playUndo();
+
+            if (!isGameActive) {
+                isGameActive = true;
+                const modal = document.getElementById('win-modal');
+                modal.classList.add('hidden');
+                
+                document.querySelectorAll('.winning-cell').forEach(el => {
+                    el.classList.remove('winning-cell');
+                });
+            }
+
+            const lastMove = moveHistory.pop();
+            board[lastMove.r][lastMove.c] = null;
+
+            const cell = document.getElementById(`cell-${lastMove.r}-${lastMove.c}`);
+            if (cell) {
+                cell.classList.remove('occupied');
+                cell.innerHTML = '';
+            }
+
+            currentTurn = lastMove.playerId;
+            renderScoreboard();
+            updateTurnDisplay();
+            startTurnTimer();
+        }
+
+        function toggleSound() {
+            sound.soundEnabled = !sound.soundEnabled;
+            const icon = document.getElementById('sound-icon');
+
+            if (sound.soundEnabled) {
+                icon.className = "fas fa-volume-up text-[#40D3CA]";
+            } else {
+                icon.className = "fas fa-volume-mute opacity-50";
+            }
+        }
+
+        function toggleBGM() {
+            sound.bgmEnabled = !sound.bgmEnabled;
+            const icon = document.getElementById('bgm-icon');
+
+            if (sound.bgmEnabled) {
+                sound.startBGM();
+                icon.className = "fas fa-music text-[#FCA800]";
+            } else {
+                sound.stopBGM();
+                icon.className = "fas fa-volume-mute opacity-50";
+            }
+        }
+
+        window.onload = function() {
+            goToModeSelection();
+        };
+    </script>
+</body>
+</html>
