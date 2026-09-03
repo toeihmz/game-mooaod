@@ -932,8 +932,8 @@
         ];
 
         /* Game State Variables */
-        let gameMode = 'local'; // 'local' or 'online'
-        let localPlayerCount = 4; // 1, 2, 3, or 4 players in local mode
+        let gameMode = 'local';
+        let localPlayerCount = 4;
         let gridSize = 8;
         let winCount = 4;
         let turnTimerDuration = 15;
@@ -963,13 +963,13 @@
         let isOnlineHost = false;
         let myOnlineSlotIndex = 0;
 
-        // PeerJS networking: host is the room authority/relay.
         let onlinePeer = null;
         let onlineHostConnection = null;
-        const onlineHostConnections = new Map();
+        const onlineHostConnections = new Map(); // peerId -> conn
         let onlinePeerId = "";
         let onlineTurnStartedAt = 0;
         let onlineLastResult = null;
+
         const DEFAULT_PLAYERS_CONFIG = [
             { id: 0, defaultName: "Player 1 (ผู้เล่น 1)", symbol: "⛏️", colorIndex: 0 },
             { id: 1, defaultName: "Player 2 (ผู้เล่น 2)", symbol: "🗡️", colorIndex: 1 },
@@ -990,7 +990,6 @@
             document.getElementById('mode-selection-screen').classList.remove('hidden');
 
             document.getElementById('header-mode-tag').textContent = "MODE SELECT";
-            
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
@@ -1030,13 +1029,11 @@
             initLobbyForm();
         }
 
-        /* --- LOCAL LOBBY FUNCTIONS --- */
         function initLobbyForm() {
             const container = document.getElementById('player-inputs-container');
             if (!container) return;
             container.innerHTML = '';
 
-            // If 1 Player (Solo) selected, render 2 slots by default (Player 1 = Human, Player 2 = Bot)
             const slotsToRender = localPlayerCount === 1 ? 2 : localPlayerCount;
 
             for (let idx = 0; idx < slotsToRender; idx++) {
@@ -1091,8 +1088,6 @@
             checkPlayerDuplicates();
         }
 
-        // Detects players sharing the same icon or the same color and warns so nobody
-        // ends up confusing pieces on the board mid-match.
         function checkPlayerDuplicates() {
             const slotsToRender = localPlayerCount === 1 ? 2 : localPlayerCount;
             const symbolCounts = {};
@@ -1102,10 +1097,8 @@
                 const symEl = document.getElementById(`p-symbol-${idx}`);
                 const colorEl = document.getElementById(`p-color-${idx}`);
                 if (!symEl || !colorEl) continue;
-                const sym = symEl.value;
-                const col = colorEl.value;
-                symbolCounts[sym] = (symbolCounts[sym] || 0) + 1;
-                colorCounts[col] = (colorCounts[col] || 0) + 1;
+                symbolCounts[symEl.value] = (symbolCounts[symEl.value] || 0) + 1;
+                colorCounts[colorEl.value] = (colorCounts[colorEl.value] || 0) + 1;
             }
 
             for (let idx = 0; idx < slotsToRender; idx++) {
@@ -1134,9 +1127,6 @@
         function randomizeAllPlayers() {
             sound.playTick();
             const slotsToRender = localPlayerCount === 1 ? 2 : localPlayerCount;
-
-            // Shuffle a copy of the symbol list so nobody gets a duplicate icon,
-            // and cycle through distinct colors too.
             const shuffledSymbols = [...ALL_SYMBOLS].sort(() => Math.random() - 0.5);
             const shuffledColors = [...Array(COLOR_OPTIONS.length).keys()].sort(() => Math.random() - 0.5);
 
@@ -1186,14 +1176,9 @@
             currentPickingPlayerIdx = playerIdx;
             const nameInput = document.getElementById(`p-name-${playerIdx}`);
             const playerName = nameInput && nameInput.value.trim() ? nameInput.value.trim() : `ผู้เล่น ${playerIdx + 1}`;
-            
-            const titleEl = document.getElementById('icon-picker-player-name');
-            if (titleEl) titleEl.textContent = playerName;
-
+            document.getElementById('icon-picker-player-name').textContent = playerName;
             filterIcons('all');
-
-            const modal = document.getElementById('icon-picker-modal');
-            if (modal) modal.classList.remove('hidden');
+            document.getElementById('icon-picker-modal').classList.remove('hidden');
         }
 
         function openIconPickerForHost() {
@@ -1202,14 +1187,9 @@
             currentPickingPlayerIdx = null;
             const nameInput = document.getElementById('host-player-name');
             const playerName = nameInput && nameInput.value.trim() ? nameInput.value.trim() : 'Host Master';
-
-            const titleEl = document.getElementById('icon-picker-player-name');
-            if (titleEl) titleEl.textContent = playerName;
-
+            document.getElementById('icon-picker-player-name').textContent = playerName;
             filterIcons('all');
-
-            const modal = document.getElementById('icon-picker-modal');
-            if (modal) modal.classList.remove('hidden');
+            document.getElementById('icon-picker-modal').classList.remove('hidden');
         }
 
         function openIconPickerForJoin() {
@@ -1218,24 +1198,17 @@
             currentPickingPlayerIdx = null;
             const nameInput = document.getElementById('join-modal-player-name');
             const playerName = nameInput && nameInput.value.trim() ? nameInput.value.trim() : 'Guest Player';
-
-            const titleEl = document.getElementById('icon-picker-player-name');
-            if (titleEl) titleEl.textContent = playerName;
-
+            document.getElementById('icon-picker-player-name').textContent = playerName;
             filterIcons('all');
-
-            const modal = document.getElementById('icon-picker-modal');
-            if (modal) modal.classList.remove('hidden');
+            document.getElementById('icon-picker-modal').classList.remove('hidden');
         }
 
         function closeIconPicker() {
-            const modal = document.getElementById('icon-picker-modal');
-            if (modal) modal.classList.add('hidden');
+            document.getElementById('icon-picker-modal').classList.add('hidden');
         }
 
         function filterIcons(cat) {
             currentIconCategory = cat;
-
             const btnAll = document.getElementById('cat-btn-all');
             const btnMc = document.getElementById('cat-btn-mc');
             const btnIos = document.getElementById('cat-btn-ios');
@@ -1287,31 +1260,21 @@
                 grid.appendChild(btn);
             });
 
-            const indicator = document.getElementById('icon-page-indicator');
-            if (indicator) indicator.textContent = `หน้า ${iconCurrentPage + 1} / ${totalPages}`;
-
-            const prevBtn = document.getElementById('icon-prev-page');
-            const nextBtn = document.getElementById('icon-next-page');
-            if (prevBtn) prevBtn.disabled = (iconCurrentPage === 0);
-            if (nextBtn) nextBtn.disabled = (iconCurrentPage >= totalPages - 1);
+            document.getElementById('icon-page-indicator').textContent = `หน้า ${iconCurrentPage + 1} / ${totalPages}`;
+            document.getElementById('icon-prev-page').disabled = (iconCurrentPage === 0);
+            document.getElementById('icon-next-page').disabled = (iconCurrentPage >= totalPages - 1);
         }
 
         function selectIcon(symbol) {
             if (isPickingForHost) {
-                const disp = document.getElementById('host-symbol-disp');
-                const input = document.getElementById('host-symbol');
-                if (disp) disp.textContent = symbol;
-                if (input) input.value = symbol;
+                document.getElementById('host-symbol-disp').textContent = symbol;
+                document.getElementById('host-symbol').value = symbol;
             } else if (isPickingForJoin) {
-                const disp = document.getElementById('join-modal-symbol-disp');
-                const input = document.getElementById('join-modal-symbol');
-                if (disp) disp.textContent = symbol;
-                if (input) input.value = symbol;
+                document.getElementById('join-modal-symbol-disp').textContent = symbol;
+                document.getElementById('join-modal-symbol').value = symbol;
             } else if (currentPickingPlayerIdx !== null) {
-                const disp = document.getElementById(`p-symbol-disp-${currentPickingPlayerIdx}`);
-                const input = document.getElementById(`p-symbol-${currentPickingPlayerIdx}`);
-                if (disp) disp.textContent = symbol;
-                if (input) input.value = symbol;
+                document.getElementById(`p-symbol-disp-${currentPickingPlayerIdx}`).textContent = symbol;
+                document.getElementById(`p-symbol-${currentPickingPlayerIdx}`).value = symbol;
                 checkPlayerDuplicates();
             }
             closeIconPicker();
@@ -1322,7 +1285,6 @@
             if (!colorSelect) return;
             const colorIndex = parseInt(colorSelect.value) || 0;
             const theme = COLOR_OPTIONS[colorIndex % COLOR_OPTIONS.length];
-
             const colorDot = document.getElementById(`p-color-dot-${playerIdx}`);
             if (colorDot) {
                 colorDot.className = `w-3.5 h-3.5 ${theme.bgClass} border border-black inline-block`;
@@ -1337,7 +1299,6 @@
 
             const size = parseInt(sizeSelect.value) || 8;
             const previousVal = parseInt(winSelect.value) || 4;
-
             winSelect.innerHTML = '';
             
             const maxWin = Math.min(size, 8);
@@ -1350,24 +1311,13 @@
                 }
                 winSelect.appendChild(option);
             }
-
-            if (!winSelect.value && winSelect.options.length > 0) {
-                winSelect.options[Math.min(1, winSelect.options.length - 1)].selected = true;
-            }
         }
 
         function toggleCustomTimerMode() {
             const isCustom = document.getElementById('chk-custom-timer').checked;
-            const timerSelect = document.getElementById('setting-timer');
-            const customBox = document.getElementById('custom-timer-input-box');
-
-            if (isCustom) {
-                timerSelect.classList.add('hidden');
-                customBox.classList.remove('hidden');
-            } else {
-                timerSelect.classList.remove('hidden');
-                customBox.classList.add('hidden');
-            }
+            document.getElementById('setting-timer').classList.toggle('hidden', isCustom);
+            document.getElementById('custom-timer-input-box').classList.toggle('hidden', !isCustom);
+            document.getElementById('custom-timer-input-box').classList.toggle('flex', isCustom);
         }
 
         function toggleDayNight() {
@@ -1398,8 +1348,7 @@
 
         function generateNewRoomCode() {
             const code = Math.floor(1000 + Math.random() * 9000).toString();
-            const input = document.getElementById('create-room-code');
-            if (input) input.value = code;
+            document.getElementById('create-room-code').value = code;
         }
 
         function openCreateHostModal() {
@@ -1432,7 +1381,6 @@
             const nameInput = document.getElementById('host-player-name').value.trim() || 'Host Master';
             const symbol = document.getElementById('host-symbol').value || '⛏️';
             const colorIdx = parseInt(document.getElementById('host-color-select').value) || 0;
-
             const theme = COLOR_OPTIONS[colorIdx];
 
             players = [
@@ -1451,7 +1399,6 @@
                 }
             ];
 
-            // Fill empty slots as waiting or available for online
             for (let i = 1; i < onlineTargetPlayerCount; i++) {
                 const defaultTheme = COLOR_OPTIONS[i % COLOR_OPTIONS.length];
                 players.push({
@@ -1493,13 +1440,11 @@
             onlineRoomPass = roomPass;
             isOnlineHost = false;
 
-            // Populate color options for join modal
             const colorSelect = document.getElementById('join-modal-color-select');
             if (colorSelect) {
                 colorSelect.innerHTML = COLOR_OPTIONS.map((c, idx) => `<option value="${idx}" ${idx === 1 ? 'selected' : ''}>${c.name}</option>`).join('');
             }
 
-            // Open Join Player Modal to ask for Name, Symbol & Color
             document.getElementById('join-player-modal').classList.remove('hidden');
         }
 
@@ -1512,10 +1457,8 @@
             const playerName = document.getElementById('join-modal-player-name').value.trim() || 'Guest Player';
             const symbol = document.getElementById('join-modal-symbol').value || '🗡️';
             const colorIdx = parseInt(document.getElementById('join-modal-color-select').value) || 1;
-
             const theme = COLOR_OPTIONS[colorIdx % COLOR_OPTIONS.length];
 
-            // Keep only the local player's provisional data until the Host accepts the join.
             players = [{
                 id: 1, name: playerName, symbol, colorIndex: colorIdx, bgClass: theme.bgClass,
                 textClass: theme.textClass, borderClass: theme.borderClass, pitch: theme.pitch,
@@ -1547,8 +1490,9 @@
             setupPeerNetworking();
         }
 
+        // ป้องกัน PeerJS ID ชนกันบน GitHub Pages โดยเพิ่ม Unique Suffix
         function getRoomPeerId() {
-            return `xo-mooaod-${onlineRoomCode}`;
+            return `xo-mooaod-room-${onlineRoomCode}`;
         }
 
         function makePlayerPayload(player) {
@@ -1564,7 +1508,7 @@
             return {
                 players: players.map(makePlayerPayload), board, moveHistory, currentTurn, startingPlayerIndex,
                 gridSize, winCount, turnTimerDuration, isGameActive, lastWinnerIndex,
-                roundResult: onlineLastResult, turnStartedAt: onlineTurnStartedAt
+                roundResult: onlineLastResult, turnStartedAt: onlineTurnStartedAt, onlineTargetPlayerCount
             };
         }
 
@@ -1581,19 +1525,21 @@
         function setupPeerNetworking() {
             closePeerNetworking();
             if (!window.Peer) {
-                alert('ไม่สามารถโหลดระบบ Online Multiplayer ได้ กรุณาเช็กอินเทอร์เน็ตแล้วรีเฟรชหน้า');
+                alert('ไม่สามารถโหลดระบบ Online Multiplayer ได้ กรุณาตรวจสอบอินเทอร์เน็ต');
                 return;
             }
 
             if (isOnlineHost) {
                 const roomPeerId = getRoomPeerId();
                 onlinePeer = new Peer(roomPeerId);
+                
                 onlinePeer.on('open', id => {
                     onlinePeerId = id;
                     renderOnlineSlots();
                 });
+
                 onlinePeer.on('connection', conn => {
-                    conn.on('open', () => { onlineHostConnections.set(conn.peer, conn); });
+                    conn.on('open', () => {});
                     conn.on('data', data => handleHostPeerMessage(conn, data));
                     conn.on('close', () => {
                         onlineHostConnections.delete(conn.peer);
@@ -1608,31 +1554,54 @@
                         }
                     });
                 });
+
                 onlinePeer.on('error', err => {
-                    console.error(err);
-                    if (err.type === 'unavailable-id') alert('เลขห้องนี้มีคนใช้อยู่แล้ว กรุณาสุ่มเลขห้องใหม่');
-                    else alert('การเชื่อมต่อห้องมีปัญหา กรุณาลองสร้างห้องใหม่');
+                    console.error("PeerJS Host Error:", err);
+                    if (err.type === 'unavailable-id') {
+                        alert('เลขห้องนี้มีผู้ใช้งานอยู่แล้ว กรุณาสุ่มเลขห้องใหม่');
+                        goToModeSelection();
+                    } else {
+                        alert('เกิดข้อผิดพลาดในการเปิดห้องออนไลน์: ' + err.type);
+                    }
                 });
             } else {
                 onlinePeer = new Peer();
+                
                 onlinePeer.on('open', id => {
                     onlinePeerId = id;
-                    const conn = onlinePeer.connect(getRoomPeerId(), { reliable: true });
+                    const hostId = getRoomPeerId();
+                    const conn = onlinePeer.connect(hostId, { reliable: true });
                     onlineHostConnection = conn;
+
                     conn.on('open', () => {
-                        conn.send({ type: 'join-request', pass: onlineRoomPass, player: {
-                            name: players[1]?.name || document.getElementById('join-modal-player-name')?.value || 'Guest Player',
-                            symbol: players[1]?.symbol || '🗡️', colorIndex: players[1]?.colorIndex ?? 1, peerId: id
-                        }});
+                        conn.send({ 
+                            type: 'join-request', 
+                            pass: onlineRoomPass, 
+                            player: {
+                                name: players[0]?.name || 'Guest Player',
+                                symbol: players[0]?.symbol || '🗡️', 
+                                colorIndex: players[0]?.colorIndex ?? 1, 
+                                peerId: id
+                            }
+                        });
                     });
+
                     conn.on('data', handleGuestPeerMessage);
-                    conn.on('close', () => { alert('Host ปิดห้องหรือการเชื่อมต่อหลุด'); goToModeSelection(); });
-                    conn.on('error', () => alert('เชื่อมต่อห้องไม่สำเร็จ กรุณาตรวจสอบเลขห้อง/รหัสผ่าน'));
+                    conn.on('close', () => { 
+                        alert('การเชื่อมต่อกับ Host ขาดหาย หรือ Host ปิดห้อง'); 
+                        goToModeSelection(); 
+                    });
+                    conn.on('error', (err) => {
+                        console.error("PeerJS Guest Error:", err);
+                        alert('ไม่สามารถเชื่อมต่อไปยังห้องได้ ตรวจสอบเลขห้องและรหัสผ่านอีกครั้ง');
+                    });
                 });
+
                 onlinePeer.on('error', err => {
-                    console.error(err);
-                    if (err.type === 'peer-unavailable') alert('ไม่พบห้องนี้ หรือ Host ยังเปิดห้องไม่สำเร็จ');
-                    else alert('การเชื่อมต่อ Online มีปัญหา กรุณาลองใหม่');
+                    console.error("PeerJS Client Error:", err);
+                    if (err.type === 'peer-unavailable') {
+                        alert('ไม่พบห้องเลขที่ระบุนี้ หรือ Host ยังไม่ได้เปิดห้อง');
+                    }
                 });
             }
         }
@@ -1640,25 +1609,48 @@
         function handleHostPeerMessage(conn, data) {
             if (!data) return;
             if (data.type === 'join-request') {
-                if (data.pass !== onlineRoomPass) { conn.send({ type: 'join-denied', reason: 'รหัสผ่านไม่ถูกต้อง' }); conn.close(); return; }
+                if (data.pass !== onlineRoomPass) {
+                    conn.send({ type: 'join-denied', reason: 'รหัสผ่าน (Password) ไม่ถูกต้อง!' });
+                    setTimeout(() => conn.close(), 500);
+                    return;
+                }
+
                 const idx = players.findIndex((p, i) => i > 0 && p.isPlaceholder);
-                if (idx === -1) { conn.send({ type: 'join-denied', reason: 'ห้องเต็มแล้ว' }); conn.close(); return; }
+                if (idx === -1) {
+                    conn.send({ type: 'join-denied', reason: 'ห้องเต็มแล้ว!' });
+                    setTimeout(() => conn.close(), 500);
+                    return;
+                }
+
                 const incoming = data.player || {};
                 const theme = COLOR_OPTIONS[(parseInt(incoming.colorIndex) || 0) % COLOR_OPTIONS.length];
+                
                 players[idx] = {
-                    id: idx, name: String(incoming.name || `ผู้เล่น ${idx + 1}`).slice(0, 24), symbol: incoming.symbol || '🙂',
-                    colorIndex: parseInt(incoming.colorIndex) || 0, bgClass: theme.bgClass, textClass: theme.textClass,
-                    borderClass: theme.borderClass, pitch: theme.pitch, isBot: false, score: players[idx].score || 0,
-                    isHost: false, isPlaceholder: false, peerId: conn.peer
+                    id: idx, 
+                    name: String(incoming.name || `ผู้เล่น ${idx + 1}`).slice(0, 24), 
+                    symbol: incoming.symbol || '🙂',
+                    colorIndex: parseInt(incoming.colorIndex) || 0, 
+                    bgClass: theme.bgClass, 
+                    textClass: theme.textClass,
+                    borderClass: theme.borderClass, 
+                    pitch: theme.pitch, 
+                    isBot: false, 
+                    score: 0,
+                    isHost: false, 
+                    isPlaceholder: false, 
+                    peerId: conn.peer
                 };
+
                 onlineHostConnections.set(conn.peer, conn);
                 conn.send({ type: 'join-accepted', slotIndex: idx, state: getOnlineGameState() });
                 broadcastRoomState();
                 renderOnlineSlots();
                 return;
             }
+
             const idx = players.findIndex(p => p.peerId === conn.peer);
             if (idx < 0) return;
+
             if (data.type === 'move-request') {
                 if (!isGameActive || currentTurn !== idx || players[idx].isBot) return;
                 const r = Number(data.r), c = Number(data.c);
@@ -1717,13 +1709,50 @@
             lastWinnerIndex = state.lastWinnerIndex ?? null;
             onlineLastResult = state.roundResult || null;
             onlineTurnStartedAt = state.turnStartedAt || Date.now();
+            
             renderBoardFromState();
             renderScoreboard();
             updateTurnDisplay();
             renderOnlineSlots();
             startTurnTimer(true);
-            if (onlineLastResult) showOnlineRoundResult(onlineLastResult);
-            else document.getElementById('win-modal').classList.add('hidden');
+
+            if (onlineLastResult) {
+                showOnlineRoundResult(onlineLastResult);
+            } else {
+                document.getElementById('win-modal').classList.add('hidden');
+            }
+        }
+
+        function renderOnlineSlots() {
+            const container = document.getElementById('online-slots-container');
+            if (!container) return;
+            container.innerHTML = '';
+
+            let connectedCount = 0;
+            players.forEach((p, idx) => {
+                if (!p.isPlaceholder) connectedCount++;
+
+                const slotCard = document.createElement('div');
+                slotCard.className = `mc-card p-2.5 flex items-center justify-between border ${p.isPlaceholder ? 'opacity-60 border-dashed' : ''}`;
+                slotCard.innerHTML = `
+                    <div class="flex items-center gap-2">
+                        <div class="w-8 h-8 rounded ${p.bgClass} flex items-center justify-center text-sm font-bold text-white border border-black">
+                            ${p.symbol}
+                        </div>
+                        <div>
+                            <div class="text-xs font-bold">${p.name}</div>
+                            <div class="text-[10px] opacity-75">${idx === 0 ? '👑 ผู้สร้างห้อง (Host)' : (p.isPlaceholder ? 'กำลังรอผู้เล่น...' : 'ผู้เล่นออนไลน์')}</div>
+                        </div>
+                    </div>
+                    <div class="text-[10px] font-bold px-2 py-0.5 ${p.isPlaceholder ? 'bg-[#8A5A36] text-white' : 'bg-[#557A2B] text-white'}">
+                        ${p.isPlaceholder ? 'ว่าง' : 'พร้อม'}
+                    </div>
+                `;
+                container.appendChild(slotCard);
+            });
+
+            document.getElementById('connected-count').textContent = connectedCount;
+            document.getElementById('target-player-count').textContent = players.length;
         }
 
         function renderBoardFromState() {
@@ -1734,7 +1763,10 @@
                     if (id === null || id === undefined) continue;
                     const p = players.find(x => x.id === id);
                     const cell = document.getElementById(`cell-${r}-${c}`);
-                    if (cell && p) { cell.classList.add('occupied'); cell.innerHTML = `<span>${p.symbol}</span>`; }
+                    if (cell && p) { 
+                        cell.classList.add('occupied'); 
+                        cell.innerHTML = `<span>${p.symbol}</span>`; 
+                    }
                 }
             }
             if (onlineLastResult?.type === 'win' && Array.isArray(onlineLastResult.winLine)) {
@@ -1796,26 +1828,27 @@
         function startOnlineBattle() {
             sound.playTick();
             if (!isOnlineHost) return;
+            
             gridSize = parseInt(document.getElementById('online-grid-size').value) || 8;
             winCount = parseInt(document.getElementById('online-win-count').value) || 4;
             const isCustomTimer = document.getElementById('chk-online-custom-timer').checked;
             turnTimerDuration = isCustomTimer ? (parseInt(document.getElementById('online-timer-custom').value) || 15) : parseInt(document.getElementById('online-timer').value);
+            
             players.forEach((p, idx) => {
-                if (p.isPlaceholder) { p.isBot = true; p.name = `บอท AI ${idx + 1}`; p.isPlaceholder = false; }
+                if (p.isPlaceholder) { 
+                    p.isBot = true; 
+                    p.name = `บอท AI ${idx + 1}`; 
+                    p.isPlaceholder = false; 
+                }
             });
+
             document.getElementById('online-lobby-waiting').classList.add('hidden');
             document.getElementById('game-screen').classList.remove('hidden');
+            
             resetRound();
-            broadcastGameState();
-        }
-
-        // Compatibility wrapper for any legacy calls.
-        function broadcastState(type, payload) {
-            if (!isOnlineHost) return;
-            if (type === 'update-slots') broadcastRoomState();
-            else if (type === 'start-battle') broadcastGameState();
-            else if (type === 'make-move') broadcastGameState();
-            else if (type === 'update-config') broadcastRoomState();
+            
+            const startMsg = { type: 'start-battle', state: getOnlineGameState() };
+            onlineHostConnections.forEach(conn => { try { conn.send(startMsg); } catch (e) {} });
         }
 
         function startGameFromLobby() {
@@ -1823,11 +1856,7 @@
             winCount = parseInt(document.getElementById('setting-win-count').value) || 4;
             
             const isCustomTimer = document.getElementById('chk-custom-timer').checked;
-            if (isCustomTimer) {
-                turnTimerDuration = parseInt(document.getElementById('setting-timer-custom').value) || 15;
-            } else {
-                turnTimerDuration = parseInt(document.getElementById('setting-timer').value);
-            }
+            turnTimerDuration = isCustomTimer ? (parseInt(document.getElementById('setting-timer-custom').value) || 15) : parseInt(document.getElementById('setting-timer').value);
 
             players = [];
             const slotsToRender = localPlayerCount === 1 ? 2 : localPlayerCount;
@@ -1857,7 +1886,6 @@
             }
 
             document.getElementById('rule-win-count').textContent = winCount;
-
             startingPlayerIndex = 0;
             currentTurn = 0;
             lastWinnerIndex = null;
@@ -1901,7 +1929,6 @@
             if (!container) return;
             container.innerHTML = '';
             
-            // Adapt grid columns based on active players count (2, 3, or 4)
             container.className = `w-full grid grid-cols-2 sm:grid-cols-${players.length} gap-2`;
 
             players.forEach((p, idx) => {
@@ -1963,10 +1990,18 @@
             badge.className = `px-2.5 py-1 font-bold text-xs flex items-center gap-1.5 border ${p.borderClass} ${p.textClass} bg-white shadow-xs`;
             badge.innerHTML = `<span class="w-2.5 h-2.5 ${p.bgClass} inline-block border border-black"></span> ${p.symbol} ${p.name}`;
 
-            if (p.isBot) {
-                statusText.textContent = 'บอทกำลังคิด...';
+            if (gameMode === 'online' && !isOnlineHost) {
+                if (myOnlineSlotIndex === currentTurn) {
+                    statusText.textContent = `ตาของคุณ! (${p.name})`;
+                } else {
+                    statusText.textContent = `ตารอ ${p.name} เดิน...`;
+                }
             } else {
-                statusText.textContent = `ตาของ ${p.name}`;
+                if (p.isBot) {
+                    statusText.textContent = 'บอทกำลังคิด...';
+                } else {
+                    statusText.textContent = `ตาของ ${p.name}`;
+                }
             }
         }
 
@@ -2001,7 +2036,6 @@
 
         function handleTimeOut() {
             if (!isGameActive) return;
-
             sound.playUndo();
             const p = players[currentTurn];
             
@@ -2042,12 +2076,20 @@
 
         function handleCellClick(r, c) {
             if (!isGameActive) return;
-            if (players[currentTurn].isBot) return;
             if (board[r][c] !== null) return;
 
-            if (gameMode === 'online' && !isOnlineHost) {
-                try { onlineHostConnection?.send({ type: 'move-request', r, c }); } catch (e) {}
-                return;
+            if (gameMode === 'online') {
+                if (!isOnlineHost) {
+                    // หากเป็นผู้เล่นออนไลน์ฝั่ง Guest ให้ส่งคำขอเดินไปยัง Host
+                    if (myOnlineSlotIndex !== currentTurn) return;
+                    try { onlineHostConnection?.send({ type: 'move-request', r, c }); } catch (e) {}
+                    return;
+                } else {
+                    // ถ้า Host เป็นบอทในช่องนั้น ห้ามคลิกเอง
+                    if (players[currentTurn].isBot) return;
+                }
+            } else {
+                if (players[currentTurn].isBot) return;
             }
 
             executeMove(r, c);
@@ -2064,11 +2106,6 @@
             if (cell) {
                 cell.classList.add('occupied');
                 cell.innerHTML = `<span>${p.symbol}</span>`;
-            }
-
-            // Online state is authoritative on the Host. Guest moves are sent as requests.
-            if (!isRemote && gameMode === 'online' && isOnlineHost) {
-                // broadcast after the turn/result calculation below
             }
 
             const winLine = checkWin(r, c, p.id);
@@ -2098,7 +2135,6 @@
 
         function makeBotMove() {
             if (!isGameActive) return;
-
             const botId = players[currentTurn].id;
             let targetR = -1, targetC = -1;
 
@@ -2115,27 +2151,6 @@
                     }
                 }
                 if (targetR !== -1) break;
-            }
-
-            if (targetR === -1) {
-                for (let opp = 0; opp < players.length; opp++) {
-                    if (opp === botId) continue;
-                    for (let r = 0; r < gridSize; r++) {
-                        for (let c = 0; c < gridSize; c++) {
-                            if (board[r][c] === null) {
-                                board[r][c] = opp;
-                                if (checkWin(r, c, opp)) {
-                                    targetR = r; targetC = c;
-                                    board[r][c] = null;
-                                    break;
-                                }
-                                board[r][c] = null;
-                            }
-                        }
-                        if (targetR !== -1) break;
-                    }
-                    if (targetR !== -1) break;
-                }
             }
 
             if (targetR === -1) {
@@ -2206,31 +2221,20 @@
 
             winLine.forEach(pos => {
                 const cell = document.getElementById(`cell-${pos.r}-${pos.c}`);
-                if (cell) {
-                    cell.classList.add('winning-cell');
-                }
+                if (cell) cell.classList.add('winning-cell');
             });
 
             sound.playWin();
-
-            try {
-                confetti({
-                    particleCount: 70,
-                    spread: 70,
-                    origin: { y: 0.6 }
-                });
-            } catch (e) {}
+            try { confetti({ particleCount: 70, spread: 70, origin: { y: 0.6 } }); } catch (e) {}
 
             setTimeout(() => {
                 const modal = document.getElementById('win-modal');
-                
                 const avatar = document.getElementById('win-avatar-container');
                 avatar.className = `w-14 h-14 mx-auto border-2 flex items-center justify-center text-3xl mb-3 ${player.bgClass} text-white`;
                 avatar.textContent = player.symbol;
                 
                 document.getElementById('win-title').textContent = `🏆 ${player.name} ชนะ!`;
                 document.getElementById('win-subtitle').textContent = `เรียงสัญลักษณ์ครบบรรทัด ${winCount} ตัวสำเร็จ`;
-
                 modal.classList.remove('hidden');
             }, 600);
         }
@@ -2240,19 +2244,16 @@
             if (timerInterval) clearInterval(timerInterval);
             onlineLastResult = { type: 'draw' };
 
-            const statusText = document.getElementById('game-status-text');
-            statusText.textContent = "🤝 เสมอกัน!";
+            document.getElementById('game-status-text').textContent = "🤝 เสมอกัน!";
 
             setTimeout(() => {
                 const modal = document.getElementById('win-modal');
-                
                 const avatar = document.getElementById('win-avatar-container');
-                avatar.className = `w-14 h-14 mx-auto border-2 flex items-center justify-center text-3xl mb-3 bg-[#8A5A36] text-white`;
+                avatar.className = 'w-14 h-14 mx-auto border-2 flex items-center justify-center text-3xl mb-3 bg-[#8A5A36] text-white';
                 avatar.textContent = "🤝";
                 
                 document.getElementById('win-title').textContent = "เสมอกัน!";
                 document.getElementById('win-subtitle').textContent = "ตารางเต็มแล้วโดยไม่มีผู้ชนะ";
-
                 modal.classList.remove('hidden');
             }, 500);
         }
@@ -2265,17 +2266,12 @@
 
         function undoMove() {
             if (moveHistory.length === 0) return;
-
             sound.playUndo();
 
             if (!isGameActive) {
                 isGameActive = true;
-                const modal = document.getElementById('win-modal');
-                modal.classList.add('hidden');
-                
-                document.querySelectorAll('.winning-cell').forEach(el => {
-                    el.classList.remove('winning-cell');
-                });
+                document.getElementById('win-modal').classList.add('hidden');
+                document.querySelectorAll('.winning-cell').forEach(el => el.classList.remove('winning-cell'));
             }
 
             const lastMove = moveHistory.pop();
@@ -2296,18 +2292,12 @@
         function toggleSound() {
             sound.soundEnabled = !sound.soundEnabled;
             const icon = document.getElementById('sound-icon');
-
-            if (sound.soundEnabled) {
-                icon.className = "fas fa-volume-up text-[#40D3CA]";
-            } else {
-                icon.className = "fas fa-volume-mute opacity-50";
-            }
+            icon.className = sound.soundEnabled ? "fas fa-volume-up text-[#40D3CA]" : "fas fa-volume-mute opacity-50";
         }
 
         function toggleBGM() {
             sound.bgmEnabled = !sound.bgmEnabled;
             const icon = document.getElementById('bgm-icon');
-
             if (sound.bgmEnabled) {
                 sound.startBGM();
                 icon.className = "fas fa-music text-[#FCA800]";
