@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>XO MooAodCompany - 4 Players (Multi-Mode & Online Edition)</title>
+    <title>XO MooAodCompany - Enhanced UX & Online Waiting Room</title>
     
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -15,27 +15,27 @@
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&family=VT323&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700;800&family=VT323&display=swap');
         
         * {
             font-family: 'Kanit', sans-serif;
             user-select: none;
             -webkit-tap-highlight-color: transparent;
-            border-radius: 4px !important;
+            border-radius: 6px !important;
         }
 
         .font-pixel {
             font-family: 'VT323', monospace;
         }
 
-        /* --- MINECRAFT DAY THEME (DEFAULT) --- */
+        /* --- DAY THEME (WARM MINECRAFT) --- */
         body {
             background-color: #5B8731;
             background-image: 
-                linear-gradient(rgba(0,0,0,0.06) 2px, transparent 2px),
-                linear-gradient(90deg, rgba(0,0,0,0.06) 2px, transparent 2px),
-                linear-gradient(180deg, #70A039 0%, #4D7328 100%);
-            background-size: 16px 16px, 16px 16px, 100% 100%;
+                linear-gradient(rgba(0,0,0,0.05) 2px, transparent 2px),
+                linear-gradient(90deg, rgba(0,0,0,0.05) 2px, transparent 2px),
+                linear-gradient(180deg, #6B9B37 0%, #466824 100%);
+            background-size: 20px 20px, 20px 20px, 100% 100%;
             color: #1E1E1E;
             min-height: 100vh;
             transition: background 0.3s ease, color 0.3s ease;
@@ -44,7 +44,7 @@
         .mc-card {
             background: #D7C49E;
             border: 3px solid #5C3A21;
-            box-shadow: inset -2px -2px 0px 0px #A89269, inset 2px 2px 0px 0px #FFF3D6, 0 4px 0px #3B2414;
+            box-shadow: inset -2px -2px 0px 0px #A89269, inset 2px 2px 0px 0px #FFF3D6, 0 6px 12px rgba(0,0,0,0.25);
         }
 
         .mc-panel {
@@ -59,13 +59,12 @@
             box-shadow: inset -2px -2px 0px 0px #3B561E, inset 2px 2px 0px 0px #80B342, 0 4px 0px #1E2D10;
             color: #FFFFFF;
             cursor: pointer;
+            transition: all 0.15s ease;
         }
-
         .mc-button-green:hover {
             background: #628C32;
             transform: translateY(-1px);
         }
-
         .mc-button-green:active {
             transform: translateY(2px);
             box-shadow: inset -1px -1px 0px 0px #3B561E, inset 1px 1px 0px 0px #80B342;
@@ -77,8 +76,8 @@
             box-shadow: inset -2px -2px 0px 0px #2A5A74, inset 2px 2px 0px 0px #6BB3DC, 0 4px 0px #113040;
             color: #FFFFFF;
             cursor: pointer;
+            transition: all 0.15s ease;
         }
-
         .mc-button-blue:hover {
             background: #4792BA;
             transform: translateY(-1px);
@@ -90,8 +89,8 @@
             box-shadow: inset -2px -2px 0px 0px #5C3A21, inset 2px 2px 0px 0px #C48E66, 0 4px 0px #23150B;
             color: #FFFFFF;
             cursor: pointer;
+            transition: all 0.15s ease;
         }
-
         .mc-button-brown:hover {
             background: #9C673F;
         }
@@ -100,13 +99,12 @@
             background: #E0D3B8;
             border: 2px solid #8B6F47;
             box-shadow: inset 2px 2px 0px #FFF6E5, inset -2px -2px 0px #B59B73;
-            transition: all 0.1s ease;
+            transition: all 0.15s ease;
         }
-
         .grid-cell:hover:not(.occupied) {
             background-color: #FFF2D6;
             border-color: #557A2B;
-            transform: scale(1.02);
+            transform: scale(1.04);
             cursor: pointer;
             box-shadow: inset 2px 2px 0px #FFFFFF, inset -2px -2px 0px #A37F4C;
         }
@@ -114,7 +112,7 @@
         .active-turn-card {
             border-color: #557A2B !important;
             background: #E8F5D6 !important;
-            box-shadow: inset 2px 2px 0px #FFFFFF, inset -2px -2px 0px #88B358, 0 0 0 3px #FCA800 !important;
+            box-shadow: inset 2px 2px 0px #FFFFFF, inset -2px -2px 0px #88B358, 0 0 0 4px #FCA800 !important;
         }
 
         .winning-cell {
@@ -127,64 +125,95 @@
 
         @keyframes mc-win-blink {
             0% { background: #FCA800; transform: scale(0.96); }
-            100% { background: #40D3CA; transform: scale(1.04); }
+            100% { background: #40D3CA; transform: scale(1.06); }
         }
 
         input, select {
-            background-color: #E8DFCE !important;
-            border: 2px solid #5C3A21 !important;
+            background-color: #FAF4E8 !important;
+            border: 2.5px solid #5C3A21 !important;
             color: #1E1E1E !important;
+            font-weight: 600;
         }
         input:focus, select:focus {
             border-color: #557A2B !important;
+            background-color: #FFFFFF !important;
             outline: none !important;
+            box-shadow: 0 0 0 3px rgba(85, 122, 43, 0.3) !important;
         }
 
-        /* --- MINECRAFT NIGHT THEME --- */
+        /* --- NIGHT MODE THEME --- */
         body.night-mode {
-            background-color: #181B26;
+            background-color: #121620;
             background-image: 
-                radial-gradient(#3B435D 1px, transparent 1px),
-                linear-gradient(180deg, #0F121C 0%, #1A2030 100%);
+                radial-gradient(#2A344A 1px, transparent 1px),
+                linear-gradient(180deg, #0B0E14 0%, #171E2C 100%);
             background-size: 20px 20px, 100% 100%;
-            color: #E0E6ED;
+            color: #F0F4F8;
         }
 
         body.night-mode .mc-card {
-            background: #232733;
-            border: 3px solid #434B61;
-            box-shadow: inset -2px -2px 0px 0px #141720, inset 2px 2px 0px 0px #383F52, 0 4px 0px #090B10;
-            color: #E0E6ED;
+            background: #1C2230;
+            border: 3px solid #38455E;
+            box-shadow: inset -2px -2px 0px 0px #121620, inset 2px 2px 0px 0px #2E3A50, 0 6px 16px rgba(0,0,0,0.6);
+            color: #F0F4F8;
         }
 
         body.night-mode .mc-panel {
-            background: #1C202B;
-            border: 3px solid #363D52;
-            box-shadow: inset -2px -2px 0px 0px #10131A, inset 2px 2px 0px 0px #2A3042;
+            background: #151B26;
+            border: 3px solid #2D384D;
+            box-shadow: inset -2px -2px 0px 0px #0E121A, inset 2px 2px 0px 0px #242E40;
         }
 
         body.night-mode .grid-cell {
-            background: #2C3244;
-            border: 2px solid #4A546E;
-            box-shadow: inset 2px 2px 0px #3D465E, inset -2px -2px 0px #1B1F2B;
+            background: #232C3D;
+            border: 2px solid #3D4C69;
+            box-shadow: inset 2px 2px 0px #313E57, inset -2px -2px 0px #181E2A;
             color: #FFFFFF;
         }
 
         body.night-mode .grid-cell:hover:not(.occupied) {
-            background-color: #384158;
+            background-color: #2F3B52;
             border-color: #40D3CA;
         }
 
         body.night-mode .active-turn-card {
             border-color: #40D3CA !important;
-            background: #1E333A !important;
-            box-shadow: inset 2px 2px 0px #2D525C, inset -2px -2px 0px #101D21, 0 0 0 3px #40D3CA !important;
+            background: #132B33 !important;
+            box-shadow: inset 2px 2px 0px #224D5B, inset -2px -2px 0px #0A161A, 0 0 0 4px #40D3CA !important;
         }
 
         body.night-mode input, body.night-mode select {
-            background-color: #232733 !important;
-            border: 2px solid #434B61 !important;
-            color: #E0E6ED !important;
+            background-color: #161B26 !important;
+            border: 2.5px solid #38455E !important;
+            color: #F0F4F8 !important;
+        }
+        body.night-mode input:focus, body.night-mode select:focus {
+            border-color: #40D3CA !important;
+            background-color: #1F2636 !important;
+            box-shadow: 0 0 0 3px rgba(64, 211, 202, 0.3) !important;
+        }
+
+        /* Step Badge Number */
+        .step-num-badge {
+            width: 28px;
+            height: 28px;
+            border-radius: 50% !important;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 800;
+            font-size: 14px;
+            background: #FCA800;
+            color: #3B2414;
+            border: 2px solid #3B2414;
+        }
+
+        .pulse-editing {
+            animation: pulse-edit-glow 1.2s infinite alternate;
+        }
+        @keyframes pulse-edit-glow {
+            0% { border-color: #FCA800; box-shadow: 0 0 0 0px rgba(252, 168, 0, 0.4); }
+            100% { border-color: #FFD269; box-shadow: 0 0 0 6px rgba(252, 168, 0, 0); }
         }
     </style>
 </head>
@@ -199,7 +228,7 @@
                 <div>
                     <h1 class="text-base sm:text-lg font-bold text-white tracking-tight flex items-center gap-2">
                         <span>XO MooAodCompany</span>
-                        <span id="header-mode-tag" class="text-[11px] font-normal px-2 py-0.5 bg-[#3B2414] text-[#FCA800] border border-[#8A5A36]">MODE SELECT</span>
+                        <span id="header-mode-tag" class="text-[11px] font-normal px-2.5 py-0.5 bg-[#3B2414] text-[#FCA800] border border-[#8A5A36] rounded-full">MODE SELECT</span>
                     </h1>
                 </div>
             </div>
@@ -228,9 +257,11 @@
         </div>
     </header>
 
-    <main class="flex-grow flex items-center justify-center p-3 sm:p-5 relative z-10">
+    <main class="flex-grow flex items-center justify-center p-3 sm:p-5 relative z-10 max-w-4xl mx-auto w-full">
         
-        <!-- 1. MODE SELECTION SCREEN -->
+        <!-- ======================================================== -->
+        <!-- 1. MODE SELECTION SCREEN                                  -->
+        <!-- ======================================================== -->
         <div id="mode-selection-screen" class="w-full max-w-2xl flex flex-col items-center gap-5 py-4">
             
             <div class="mc-card w-full p-6 text-center shadow-2xl relative overflow-hidden">
@@ -240,8 +271,8 @@
                 <h2 class="text-2xl sm:text-4xl font-extrabold tracking-tight mb-3">
                     ยินดีต้อนรับเข้าสู่เกม XO!
                 </h2>
-                <p class="text-xs sm:text-sm opacity-90 max-w-lg mx-auto">
-                    กรุณาเลือกรูปแบบการเล่นที่คุณต้องการ คุณสามารถเลือกเล่นรวมกันในคอมพิวเตอร์เครื่องเดียว หรือสร้างห้องเล่นออนไลน์แยกคนละเครื่องได้
+                <p class="text-xs sm:text-sm opacity-90 max-w-lg mx-auto leading-relaxed">
+                    เลือกโหมดการเล่นที่ต้องการ คุณสามารถเล่นสนุกกับเพื่อนๆ เครื่องเดียวกัน (Local) หรือเปิดห้องสร้างเกมแข่งออนไลน์กับเพื่อนทางไกลได้!
                 </p>
             </div>
 
@@ -251,15 +282,15 @@
                     <div class="w-16 h-16 rounded-full bg-[#557A2B] border-4 border-[#80B342] flex items-center justify-center text-3xl mb-3 text-white shadow-md group-hover:bg-[#628C32]">
                         🖥️
                     </div>
-                    <h3 class="text-lg font-bold mb-1">เล่นเครื่องเดียวกัน</h3>
+                    <h3 class="text-lg font-bold mb-1">เล่นเครื่องเดียวกัน (Local)</h3>
                     <div class="text-[11px] px-2 py-0.5 bg-[#3B2414] text-[#FCA800] font-bold mb-2 border border-[#8A5A36]">
-                        LOCAL 1 - 4 PLAYERS (SOLO & BOTS)
+                        LOCAL 1 - 4 PLAYERS
                     </div>
-                    <p class="text-xs opacity-80 leading-relaxed mb-4">
-                        เลือกเล่น 1 - 4 คนบนเครื่องเดียวกัน สามารถเปิดบอท AI สำหรับคนเหงาหรือเพิ่มผู้เล่นได้ตามต้องการ
+                    <p class="text-xs opacity-85 leading-relaxed mb-4">
+                        เล่น 1-4 คนบนจอเดียวกัน เปิดโหมดสู้กับ บอท AI เพิ่มความสนุกแบบออฟไลน์ได้ทุกเวลา
                     </p>
-                    <button type="button" class="mt-auto w-full py-2 mc-button-green font-bold text-xs">
-                        เข้าสู่หน้าตั้งชื่อผู้เล่น ➔
+                    <button type="button" class="mt-auto w-full py-2.5 mc-button-green font-bold text-xs flex items-center justify-center gap-2">
+                        <span>เข้าสู่หน้าตั้งค่าการเล่น</span> <i class="fas fa-arrow-right"></i>
                     </button>
                 </div>
 
@@ -268,67 +299,76 @@
                     <div class="w-16 h-16 rounded-full bg-[#3B7EA1] border-4 border-[#6BB3DC] flex items-center justify-center text-3xl mb-3 text-white shadow-md group-hover:bg-[#4792BA]">
                         🌐
                     </div>
-                    <h3 class="text-lg font-bold mb-1">เล่นออนไลน์</h3>
+                    <h3 class="text-lg font-bold mb-1">เล่นออนไลน์ (Online Room)</h3>
                     <div class="text-[11px] px-2 py-0.5 bg-[#113040] text-[#6BB3DC] font-bold mb-2 border border-[#2A5A74]">
                         ONLINE ROOM (2 - 4 PLAYERS)
                     </div>
-                    <p class="text-xs opacity-80 leading-relaxed mb-4">
-                        เล่นแยกคนละเครื่อง สร้างห้องด้วยรหัส 4 หลัก ใส่ Password แล้วส่งให้เพื่อนๆ เข้ามาร่วมแข่งกัน real-time
+                    <p class="text-xs opacity-85 leading-relaxed mb-4">
+                        สร้างห้องด้วยรหัส 4 หลัก แต่งสัญลักษณ์ ปรับสีประจำตัว และกดพร้อมเล่นสด Real-time!
                     </p>
-                    <button type="button" class="mt-auto w-full py-2 mc-button-blue font-bold text-xs">
-                        สร้างห้อง / เข้าร่วมห้อง ➔
+                    <button type="button" class="mt-auto w-full py-2.5 mc-button-blue font-bold text-xs flex items-center justify-center gap-2">
+                        <span>สร้างห้อง / เข้าร่วมห้อง</span> <i class="fas fa-arrow-right"></i>
                     </button>
                 </div>
             </div>
 
         </div>
 
-        <!-- 2. LOCAL LOBBY SCREEN (ORIGINAL PASS & PLAY) -->
-        <div id="lobby-screen" class="hidden w-full max-w-3xl flex flex-col items-center gap-4 py-2">
+        <!-- ======================================================== -->
+        <!-- 2. LOCAL LOBBY SCREEN (ENHANCED FOCUS & HIERARCHY)        -->
+        <!-- ======================================================== -->
+        <div id="lobby-screen" class="hidden w-full max-w-3xl flex flex-col items-center gap-5 py-2">
             
             <div class="mc-card w-full p-5 text-center shadow-xl">
                 <div class="inline-block px-3 py-1 bg-[#3B2414] text-[#FCA800] text-xs font-bold mb-2 border border-[#8A5A36]">
-                    🖥️ LOCAL MODE: SAME COMPUTER 🖥️
+                    🖥️ LOCAL MULTIPLAYER SETTINGS 🖥️
                 </div>
-                <h2 class="text-2xl sm:text-3xl font-extrabold tracking-tight mb-2">
-                    ห้องเตรียมความพร้อม & กรอกชื่อเข้าเล่น
+                <h2 class="text-2xl sm:text-3xl font-extrabold tracking-tight mb-1">
+                    ตั้งค่าเกม XO (เครื่องเดียวกัน)
                 </h2>
-                <p class="text-xs sm:text-sm opacity-80 max-w-xl mx-auto">
-                    กรอกชื่อ เลือกสัญลักษณ์ และเลือกสีประจำตัวของผู้เล่นทั้ง 4 คน หรือเปิดโหมดบอท AI สำหรับตำแหน่งที่ว่าง ก่อนกด Join เข้าสู่กระดานแข่งขัน!
+                <p class="text-xs sm:text-sm opacity-85 max-w-xl mx-auto">
+                    ทำตาม 2 ขั้นตอนง่ายๆ ด้านล่างเพื่อเริ่มการแข่งขัน:
                 </p>
             </div>
 
-            <!-- Match Rules & Board Config Card -->
-            <div class="mc-card w-full p-4 sm:p-5">
-                <h3 class="text-sm font-bold mb-3 flex items-center gap-2 pb-2 border-b-2 border-[#5C3A21]">
-                    <span class="text-base">⚙️</span> ตั้งค่ากติกาและขนาดกระดาน
-                </h3>
+            <!-- STEP 1: RULES & PLAYER COUNT -->
+            <div class="mc-card w-full p-4 sm:p-5 relative border-l-8 border-l-[#FCA800]">
+                <div class="flex items-center gap-3 mb-4 pb-2 border-b-2 border-[#5C3A21]">
+                    <span class="step-num-badge">1</span>
+                    <div>
+                        <h3 class="text-base font-bold flex items-center gap-2">
+                            <span>กติกาและจำนวนผู้เล่น</span>
+                        </h3>
+                        <p class="text-[11px] opacity-80">เลือกจำนวนคนในเกม และขนาดของกระดาน XO</p>
+                    </div>
+                </div>
 
-                <div class="mb-4 bg-black/10 p-3 border-2 border-[#5C3A21]">
-                    <label class="block text-sm font-bold mb-2.5 flex items-center gap-1.5">
+                <!-- Number of players selection -->
+                <div class="mb-4 bg-black/10 p-3.5 border-2 border-[#5C3A21]">
+                    <label class="block text-xs font-bold mb-2 flex items-center gap-1.5">
                         <i class="fas fa-users text-[#FCA800]"></i>
-                        <span>เลือกจำนวนผู้เล่นในเครื่องเดียวกัน</span>
+                        <span>เลือกจำนวนผู้เล่นที่จะแข่งกัน</span>
                     </label>
-                    <div class="grid grid-cols-4 gap-2" id="local-count-group" role="group">
-                        <button type="button" id="local-count-1" onclick="setLocalPlayerCount(1)" class="count-select-btn">
-                            <span class="count-select-num">1</span>
-                            <span class="count-select-label">Solo<br>vs Bot</span>
-                            <i class="fas fa-circle-check count-select-check"></i>
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                        <button type="button" id="local-count-1" onclick="setLocalPlayerCount(1)" 
+                            class="py-2.5 px-2 font-bold text-xs border-2 border-[#5C3A21] bg-[#557A2B] text-white flex flex-col items-center gap-1 shadow-xs transition">
+                            <span class="text-sm">👤 1 คน</span>
+                            <span class="text-[10px] font-normal opacity-90">(เล่นคนเดียว vs AI)</span>
                         </button>
-                        <button type="button" id="local-count-2" onclick="setLocalPlayerCount(2)" class="count-select-btn">
-                            <span class="count-select-num">2</span>
-                            <span class="count-select-label">คน</span>
-                            <i class="fas fa-circle-check count-select-check"></i>
+                        <button type="button" id="local-count-2" onclick="setLocalPlayerCount(2)" 
+                            class="py-2.5 px-2 font-bold text-xs border-2 border-[#5C3A21] bg-[#8A5A36] text-white opacity-80 hover:opacity-100 flex flex-col items-center gap-1 transition">
+                            <span class="text-sm">👥 2 คน</span>
+                            <span class="text-[10px] font-normal opacity-90">(ดวล 1v1)</span>
                         </button>
-                        <button type="button" id="local-count-3" onclick="setLocalPlayerCount(3)" class="count-select-btn">
-                            <span class="count-select-num">3</span>
-                            <span class="count-select-label">คน</span>
-                            <i class="fas fa-circle-check count-select-check"></i>
+                        <button type="button" id="local-count-3" onclick="setLocalPlayerCount(3)" 
+                            class="py-2.5 px-2 font-bold text-xs border-2 border-[#5C3A21] bg-[#8A5A36] text-white opacity-80 hover:opacity-100 flex flex-col items-center gap-1 transition">
+                            <span class="text-sm">👨‍👩‍👦 3 คน</span>
+                            <span class="text-[10px] font-normal opacity-90">(ตะลุมบอน 3 คน)</span>
                         </button>
-                        <button type="button" id="local-count-4" onclick="setLocalPlayerCount(4)" class="count-select-btn">
-                            <span class="count-select-num">4</span>
-                            <span class="count-select-label">คน</span>
-                            <i class="fas fa-circle-check count-select-check"></i>
+                        <button type="button" id="local-count-4" onclick="setLocalPlayerCount(4)" 
+                            class="py-2.5 px-2 font-bold text-xs border-2 border-[#5C3A21] bg-[#8A5A36] text-white opacity-80 hover:opacity-100 flex flex-col items-center gap-1 transition">
+                            <span class="text-sm">👨‍👩‍👧‍👦 4 คน</span>
+                            <span class="text-[10px] font-normal opacity-90">(สุดมันส์ 4 ผู้เล่น)</span>
                         </button>
                     </div>
                 </div>
@@ -336,7 +376,7 @@
                 <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     <div>
                         <label class="block text-xs font-bold mb-1">ขนาดกระดานตาราง</label>
-                        <select id="setting-grid-size" onchange="updateWinCountOptions()" class="w-full px-2 py-1.5 text-xs font-semibold">
+                        <select id="setting-grid-size" onchange="updateWinCountOptions()" class="w-full px-3 py-2 text-xs font-bold">
                             <option value="5">5 x 5 ตาราง</option>
                             <option value="6">6 x 6 ตาราง</option>
                             <option value="7">7 x 7 ตาราง</option>
@@ -348,7 +388,7 @@
 
                     <div>
                         <label class="block text-xs font-bold mb-1">จำนวนเรียงชนะ</label>
-                        <select id="setting-win-count" class="w-full px-2 py-1.5 text-xs font-semibold">
+                        <select id="setting-win-count" class="w-full px-3 py-2 text-xs font-bold">
                             <!-- Populated dynamically -->
                         </select>
                     </div>
@@ -361,7 +401,7 @@
                                 <span>กำหนดเอง</span>
                             </label>
                         </div>
-                        <select id="setting-timer" class="w-full px-2 py-1.5 text-xs font-semibold">
+                        <select id="setting-timer" class="w-full px-3 py-2 text-xs font-bold">
                             <option value="0">ไม่จำกัดเวลา</option>
                             <option value="10">10 วินาที</option>
                             <option value="15" selected>15 วินาที</option>
@@ -371,39 +411,63 @@
                         </select>
                         <div id="custom-timer-input-box" class="hidden flex items-center gap-1.5">
                             <input type="number" id="setting-timer-custom" min="3" max="600" value="20" placeholder="วินาที"
-                                class="w-full px-2 py-1.5 text-xs font-bold">
+                                class="w-full px-2.5 py-2 text-xs font-bold">
                             <span class="text-xs shrink-0 font-bold">วินาที</span>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <div class="mc-card w-full p-4 sm:p-5">
-                <div class="flex items-center justify-between mb-3 pb-2 border-b-2 border-[#5C3A21]">
-                    <h3 class="text-sm font-bold flex items-center gap-2">
-                        <span class="text-base">🧑‍🤝‍🧑</span> ลงทะเบียนผู้เล่น 4 คน (Player Registration)
-                    </h3>
-                    <button type="button" onclick="randomizeAllPlayers()" class="px-2.5 py-1 mc-button-brown text-xs font-bold flex items-center gap-1">
-                        <i class="fas fa-dice text-[#FCA800]"></i> สุ่มชื่อ & สัญลักษณ์
-                    </button>
+            <!-- STEP 2: PLAYER PROFILES -->
+            <div class="mc-card w-full p-4 sm:p-5 relative border-l-8 border-l-[#557A2B]">
+                <div class="flex items-center justify-between mb-4 pb-2 border-b-2 border-[#5C3A21]">
+                    <div class="flex items-center gap-3">
+                        <span class="step-num-badge" style="background:#557A2B; color:white;">2</span>
+                        <div>
+                            <h3 class="text-base font-bold flex items-center gap-2">
+                                <span>ตั้งค่าโปรไฟล์ผู้เล่น</span>
+                            </h3>
+                            <p class="text-[11px] opacity-80">กรอกชื่อ สัญลักษณ์ และสีประจำตัวผู้เล่น</p>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center gap-2">
+                        <button type="button" onclick="randomizeAllPlayers()" class="px-2.5 py-1.5 mc-button-brown text-xs font-bold flex items-center gap-1">
+                            <i class="fas fa-dice text-[#FCA800]"></i> <span>สุ่มโปรไฟล์</span>
+                        </button>
+                    </div>
                 </div>
 
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3" id="player-inputs-container">
+                <!-- Container for Player Cards -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5" id="player-inputs-container">
                     <!-- Dynamic player registration forms populated by JS -->
+                </div>
+
+                <!-- Duplicate Alert Action Box -->
+                <div id="duplicate-warning-box" class="hidden mt-3 p-2.5 bg-[#E53935] text-white border-2 border-[#68100E] flex flex-wrap items-center justify-between gap-2">
+                    <div class="text-xs font-bold flex items-center gap-2">
+                        <i class="fas fa-triangle-exclamation text-base"></i>
+                        <span>พบผู้เล่นเลือกสีหรือสัญลักษณ์ซ้ำกัน! กรุณาเปลี่ยนเพื่อไม่ให้สับสน</span>
+                    </div>
+                    <button type="button" onclick="autoFixDuplicates()" class="px-2 py-1 bg-white text-[#E53935] text-xs font-bold hover:bg-slate-100 transition shadow-xs">
+                        ⚡ แก้ไขสี/สัญลักษณ์อัตโนมัติ
+                    </button>
                 </div>
             </div>
 
-            <!-- Action Buttons for Joining Game -->
-            <div class="w-full flex flex-col sm:flex-row gap-2">
-                <button onclick="startGameFromLobby()" class="flex-1 py-3 mc-button-green font-extrabold text-sm sm:text-base tracking-wide flex items-center justify-center gap-2 shadow-lg">
-                    <i class="fas fa-right-to-bracket text-lg"></i>
-                    <span>JOIN GAME & เริ่มการแข่งขัน (Start Battle)</span>
+            <!-- Action Button to Start Game -->
+            <div class="w-full pt-1">
+                <button onclick="startGameFromLobby()" class="w-full py-3.5 mc-button-green font-extrabold text-sm sm:text-base tracking-wide flex items-center justify-center gap-2 shadow-xl">
+                    <i class="fas fa-play text-lg text-[#FCA800]"></i>
+                    <span>เข้าสู่กระดานแข่งขัน (START GAME)</span>
                 </button>
             </div>
 
         </div>
 
-        <!-- 3. ONLINE MODE SETUP SCREEN (JOIN / CREATE ROOM) -->
+        <!-- ======================================================== -->
+        <!-- 3. ONLINE MODE SETUP SCREEN                               -->
+        <!-- ======================================================== -->
         <div id="online-setup-screen" class="hidden w-full max-w-2xl flex flex-col items-center gap-4 py-2">
             
             <div class="mc-card w-full p-4 sm:p-5">
@@ -412,7 +476,7 @@
                         🌐 ONLINE MULTIPLAYER 🌐
                     </div>
                     <h2 class="text-xl sm:text-2xl font-extrabold tracking-tight">
-                        ตั้งค่าเล่นออนไลน์ (Online Room Setup)
+                        ตั้งค่าโหมดเล่นออนไลน์ (Online Setup)
                     </h2>
                 </div>
 
@@ -430,23 +494,23 @@
                     </button>
                 </div>
 
-                <!-- FORM 1: JOIN ROOM FORM (DEFAULT ACTIVE) -->
+                <!-- FORM 1: JOIN ROOM FORM -->
                 <div id="online-join-panel" class="bg-black/10 p-4 border-2 border-[#5C3A21] flex flex-col gap-3">
                     <h3 class="text-sm font-bold flex items-center gap-2 border-b pb-2 border-[#5C3A21] text-[#557A2B]">
-                        <i class="fas fa-key"></i>
-                        <span>เข้าร่วมห้องแข่งขัน (Join Game Room)</span>
+                        <i class="fas fa-key text-[#FCA800]"></i>
+                        <span>กรอกรหัสเพื่อเข้าร่วมห้องแข่งขัน</span>
                     </h3>
 
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <div>
                             <label class="block text-xs font-bold mb-1">เลขห้อง (4 หลัก)</label>
                             <input type="text" id="join-room-code" maxlength="4" placeholder="เช่น 4829" 
-                                class="w-full px-2.5 py-2 text-xs font-pixel font-bold tracking-widest text-center">
+                                class="w-full px-2.5 py-2 text-sm font-pixel font-bold tracking-widest text-center">
                         </div>
                         <div>
                             <label class="block text-xs font-bold mb-1">Password (4 หลัก)</label>
                             <input type="password" id="join-room-pass" maxlength="4" placeholder="****" 
-                                class="w-full px-2.5 py-2 text-xs font-pixel font-bold tracking-widest text-center">
+                                class="w-full px-2.5 py-2 text-sm font-pixel font-bold tracking-widest text-center">
                         </div>
                     </div>
 
@@ -457,14 +521,13 @@
                     </div>
                 </div>
 
-                <!-- FORM 2: CREATE ROOM FORM (HIDDEN BY DEFAULT) -->
+                <!-- FORM 2: CREATE ROOM FORM -->
                 <div id="online-create-panel" class="hidden bg-black/10 p-4 border-2 border-[#5C3A21] flex flex-col gap-3">
                     <h3 class="text-sm font-bold flex items-center gap-2 border-b pb-2 border-[#5C3A21] text-[#3B7EA1]">
-                        <i class="fas fa-hammer"></i>
-                        <span>สร้างห้องเกมใหม่ (Create New Room)</span>
+                        <i class="fas fa-hammer text-[#6BB3DC]"></i>
+                        <span>กำหนดค่าห้องแข่งขันใหม่</span>
                     </h3>
 
-                    <!-- Player Count Selection inside Create Room -->
                     <div>
                         <label class="block text-xs font-bold mb-2 flex items-center gap-1.5">
                             <i class="fas fa-users text-[#FCA800]"></i>
@@ -472,7 +535,7 @@
                         </label>
                         <div class="grid grid-cols-3 gap-2 max-w-md mx-auto mb-2">
                             <button type="button" id="btn-count-2" onclick="setOnlinePlayerCount(2)" 
-                                class="py-2 font-bold text-xs border-2 border-[#5C3A21] bg-[#557A2B] text-white shadow-sm transition">
+                                class="py-2 font-bold text-xs border-2 border-[#5C3A21] bg-[#8A5A36] text-white opacity-80 hover:opacity-100 transition">
                                 👥 2 คน
                             </button>
                             <button type="button" id="btn-count-3" onclick="setOnlinePlayerCount(3)" 
@@ -480,7 +543,7 @@
                                 👨‍👩‍👦 3 คน
                             </button>
                             <button type="button" id="btn-count-4" onclick="setOnlinePlayerCount(4)" 
-                                class="py-2 font-bold text-xs border-2 border-[#5C3A21] bg-[#8A5A36] text-white opacity-80 hover:opacity-100 transition">
+                                class="py-2 font-bold text-xs border-2 border-[#5C3A21] bg-[#557A2B] text-white shadow-sm transition">
                                 👨‍👩‍👧‍👦 4 คน
                             </button>
                         </div>
@@ -488,10 +551,10 @@
 
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <div>
-                            <label class="block text-xs font-bold mb-1">ระบบเรนเดอร์เลขห้อง (4 หลัก)</label>
+                            <label class="block text-xs font-bold mb-1">เลขห้อง (4 หลัก)</label>
                             <div class="flex items-center gap-1.5">
                                 <input type="text" id="create-room-code" readonly 
-                                    class="w-full px-2.5 py-2 text-xs font-pixel font-bold tracking-widest text-center bg-black/20 text-[#FCA800]">
+                                    class="w-full px-2.5 py-2 text-sm font-pixel font-bold tracking-widest text-center bg-black/20 text-[#FCA800]">
                                 <button type="button" onclick="generateNewRoomCode()" class="px-2.5 py-2 mc-button-brown text-xs font-bold shrink-0">
                                     <i class="fas fa-sync-alt"></i> สุ่ม
                                 </button>
@@ -500,17 +563,13 @@
                         <div>
                             <label class="block text-xs font-bold mb-1">กำหนด Password (4 หลัก)</label>
                             <input type="password" id="create-room-pass" maxlength="4" value="1234" placeholder="ระบุ Password 4 หลัก" 
-                                class="w-full px-2.5 py-2 text-xs font-pixel font-bold tracking-widest text-center">
+                                class="w-full px-2.5 py-2 text-sm font-pixel font-bold tracking-widest text-center">
                         </div>
-                    </div>
-
-                    <div class="text-[11px] opacity-75 text-center pt-1">
-                        💡 กด "สร้างห้องเกม" เพื่อตั้งชื่อตัวละคร เลือกสัญลักษณ์ และเปิดห้องรอสำหรับเพื่อนๆ
                     </div>
 
                     <div class="pt-2">
                         <button type="button" onclick="openCreateHostModal()" class="w-full py-3 mc-button-blue font-bold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-md">
-                            <i class="fas fa-hammer text-base"></i> สร้างห้องเกม ➔
+                            <i class="fas fa-arrow-right text-base"></i> ต่อไป: กรอกชื่อผู้สร้างห้อง ➔
                         </button>
                     </div>
                 </div>
@@ -519,12 +578,12 @@
 
         </div>
 
-        <!-- 4. MODAL FOR HOST NAME REGISTRATION WHEN CREATING ONLINE ROOM -->
+        <!-- MODAL FOR HOST DETAIL REGISTRATION -->
         <div id="host-name-modal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 bg-black/70 backdrop-blur-xs">
             <div class="mc-card max-w-sm w-full p-4 shadow-2xl">
                 <div class="flex items-center justify-between mb-3 pb-2 border-b-2 border-[#5C3A21]">
                     <h3 class="text-xs sm:text-sm font-bold flex items-center gap-1.5">
-                        <span>👑</span> กรอกชื่อผู้สร้างห้อง (Host Details)
+                        <span>👑</span> กรอกชื่อผู้สร้างห้อง (Host Master)
                     </h3>
                     <button type="button" onclick="closeHostNameModal()" class="bg-[#8A5A36] text-white px-2 py-0.5 border border-[#3B2414]">
                         <i class="fas fa-times text-xs"></i>
@@ -533,22 +592,22 @@
 
                 <div class="flex flex-col gap-3 mb-4">
                     <div>
-                        <label class="block text-xs font-bold mb-1">ชื่อที่ตัวเองต้องการจะแสดง</label>
+                        <label class="block text-xs font-bold mb-1">ชื่อที่ใช้แสดง</label>
                         <input type="text" id="host-player-name" placeholder="กรอกชื่อของคุณ..." value="Host Master" 
-                            class="w-full px-2 py-1.5 text-xs font-bold">
+                            class="w-full px-2.5 py-2 text-xs font-bold">
                     </div>
 
                     <div>
-                        <label class="block text-xs font-bold mb-1">สัญลักษณ์ประจำตัว</label>
+                        <label class="block text-xs font-bold mb-1">สัญลักษณ์ประจำตัว & สี</label>
                         <div class="flex items-center gap-2">
                             <button type="button" onclick="openIconPickerForHost()" id="host-symbol-btn" 
-                                class="px-3 py-1.5 bg-[#E8DFCE] border-2 border-[#5C3A21] text-base font-bold flex items-center gap-2">
+                                class="px-3 py-2 bg-[#FAF4E8] border-2 border-[#5C3A21] text-base font-bold flex items-center gap-2">
                                 <span id="host-symbol-disp">⛏️</span>
                                 <span class="text-[10px] opacity-70">เปลี่ยน 🎨</span>
                             </button>
                             <input type="hidden" id="host-symbol" value="⛏️">
                             
-                            <select id="host-color-select" class="flex-1 px-2 py-1.5 text-xs font-bold">
+                            <select id="host-color-select" class="flex-1 px-2 py-2 text-xs font-bold">
                                 <!-- Rendered dynamically -->
                             </select>
                         </div>
@@ -556,17 +615,17 @@
                 </div>
 
                 <button type="button" onclick="confirmCreateRoom()" class="w-full py-2.5 mc-button-green font-bold text-xs flex items-center justify-center gap-1">
-                    <i class="fas fa-check"></i> ตกลง & เข้าสู่ห้องรอออนไลน์
+                    <i class="fas fa-check"></i> ตกลง & เปิดห้องรอออนไลน์
                 </button>
             </div>
         </div>
 
-        <!-- MODAL FOR JOIN PLAYER REGISTRATION AFTER VALIDATING ROOM & PASS -->
+        <!-- MODAL FOR JOIN DETAIL REGISTRATION -->
         <div id="join-player-modal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 bg-black/70 backdrop-blur-xs">
             <div class="mc-card max-w-sm w-full p-4 shadow-2xl">
                 <div class="flex items-center justify-between mb-3 pb-2 border-b-2 border-[#5C3A21]">
                     <h3 class="text-xs sm:text-sm font-bold flex items-center gap-1.5">
-                        <span>👤</span> กรอกข้อมูลผู้เล่น (Join Details)
+                        <span>👤</span> กรอกข้อมูลผู้เล่น (Join Game)
                     </h3>
                     <button type="button" onclick="closeJoinPlayerModal()" class="bg-[#8A5A36] text-white px-2 py-0.5 border border-[#3B2414]">
                         <i class="fas fa-times text-xs"></i>
@@ -577,20 +636,20 @@
                     <div>
                         <label class="block text-xs font-bold mb-1">ชื่อที่จะใช้เล่น</label>
                         <input type="text" id="join-modal-player-name" placeholder="กรอกชื่อของคุณ..." value="Guest Player" 
-                            class="w-full px-2 py-1.5 text-xs font-bold">
+                            class="w-full px-2.5 py-2 text-xs font-bold">
                     </div>
 
                     <div>
-                        <label class="block text-xs font-bold mb-1">สัญลักษณ์ประจำตัว</label>
+                        <label class="block text-xs font-bold mb-1">สัญลักษณ์ประจำตัว & สี</label>
                         <div class="flex items-center gap-2">
                             <button type="button" onclick="openIconPickerForJoin()" id="join-modal-symbol-btn" 
-                                class="px-3 py-1.5 bg-[#E8DFCE] border-2 border-[#5C3A21] text-base font-bold flex items-center gap-2">
+                                class="px-3 py-2 bg-[#FAF4E8] border-2 border-[#5C3A21] text-base font-bold flex items-center gap-2">
                                 <span id="join-modal-symbol-disp">🗡️</span>
                                 <span class="text-[10px] opacity-70">เปลี่ยน 🎨</span>
                             </button>
                             <input type="hidden" id="join-modal-symbol" value="🗡️">
                             
-                            <select id="join-modal-color-select" class="flex-1 px-2 py-1.5 text-xs font-bold">
+                            <select id="join-modal-color-select" class="flex-1 px-2 py-2 text-xs font-bold">
                                 <!-- Rendered dynamically -->
                             </select>
                         </div>
@@ -603,48 +662,55 @@
             </div>
         </div>
 
-        <!-- 5. ONLINE WAITING LOBBY (LOBBY BEFORE GAME START) -->
+        <!-- ======================================================== -->
+        <!-- 4. ONLINE WAITING LOBBY (FULLY FEATURED REVISED UX)        -->
+        <!-- ======================================================== -->
         <div id="online-lobby-waiting" class="hidden w-full max-w-2xl flex flex-col items-center gap-4 py-2">
             
-            <div class="mc-card w-full p-4 sm:p-5">
+            <div class="mc-card w-full p-4 sm:p-5 border-l-8 border-l-[#3B7EA1]">
                 <div class="flex items-center justify-between pb-3 border-b-2 border-[#5C3A21] mb-3">
                     <div>
-                        <div class="text-[10px] font-bold opacity-75 uppercase">Online Waiting Room</div>
-                        <h2 class="text-lg sm:text-xl font-bold flex items-center gap-2">
-                            <span>ห้องเลขที่:</span>
-                            <span id="display-online-room-code" class="text-[#FCA800] font-pixel text-2xl tracking-widest">4829</span>
+                        <div class="text-[11px] font-bold opacity-80 uppercase tracking-wider">ห้องรอออนไลน์ (ONLINE LOBBY)</div>
+                        <h2 class="text-xl sm:text-2xl font-bold flex items-center gap-2">
+                            <span>เลขห้อง:</span>
+                            <span id="display-online-room-code" class="text-[#FCA800] font-pixel text-3xl tracking-widest">4829</span>
                         </h2>
                     </div>
 
                     <div class="text-right">
-                        <div class="text-[10px] font-bold opacity-75">Password</div>
-                        <div id="display-online-room-pass" class="font-pixel text-lg text-[#40D3CA] tracking-wider">1234</div>
+                        <div class="text-[11px] font-bold opacity-80">PASSWORD</div>
+                        <div id="display-online-room-pass" class="font-pixel text-xl text-[#40D3CA] tracking-wider">1234</div>
                     </div>
                 </div>
 
-                <!-- Players slots grid -->
+                <!-- PLAYERS SLOTS & IN-ROOM EDITING AREA -->
                 <div class="mb-4">
                     <div class="flex items-center justify-between mb-2">
-                        <span class="text-xs font-bold">รายชื่อผู้เล่นที่เข้ามาในห้อง (<span id="connected-count">1</span>/<span id="target-player-count">4</span>)</span>
-                        <button type="button" onclick="copyOnlineRoomInfo()" class="px-2 py-1 mc-button-brown text-[11px] font-bold flex items-center gap-1">
-                            <i class="fas fa-copy"></i> คัดลอกเลขห้อง
+                        <span class="text-xs font-bold flex items-center gap-1.5">
+                            <i class="fas fa-users text-[#FCA800]"></i>
+                            <span>ผู้เล่นในห้อง (<span id="connected-count">1</span>/<span id="target-player-count">4</span>)</span>
+                        </span>
+                        <button type="button" onclick="copyOnlineRoomInfo()" class="px-2.5 py-1 mc-button-brown text-[11px] font-bold flex items-center gap-1">
+                            <i class="fas fa-copy text-[#FCA800]"></i> คัดลอกเลขห้อง
                         </button>
                     </div>
 
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2" id="online-slots-container">
-                        <!-- Dynamic Slots -->
+                    <!-- Online Player Slot Grid -->
+                    <div class="grid grid-cols-1 gap-2.5" id="online-slots-container">
+                        <!-- Dynamic Player Cards rendered via JS -->
                     </div>
                 </div>
 
-                <!-- Host Controls for match settings -->
-                <div id="host-settings-panel" class="bg-black/10 p-3 border-2 border-[#5C3A21] mb-4">
-                    <div class="text-xs font-bold mb-2 flex items-center gap-1 text-[#557A2B]">
-                        <span>⚙️</span> ตั้งค่ากระดาน (สำหรับ Host)
+                <!-- Host Controls Panel -->
+                <div id="host-settings-panel" class="bg-black/10 p-3.5 border-2 border-[#5C3A21] mb-4">
+                    <div class="text-xs font-bold mb-2 flex items-center gap-1.5 text-[#557A2B]">
+                        <i class="fas fa-sliders text-[#FCA800]"></i>
+                        <span>ตั้งค่ากติกากระดาน (สำหรับ Host)</span>
                     </div>
                     <div class="grid grid-cols-3 gap-2 text-xs font-bold">
                         <div>
                             <label class="block text-[10px] mb-0.5">ขนาดกระดาน</label>
-                            <select id="online-grid-size" onchange="syncOnlineSettings()" class="w-full px-1 py-1 text-xs font-bold">
+                            <select id="online-grid-size" onchange="syncOnlineSettings()" class="w-full px-1.5 py-1 text-xs font-bold">
                                 <option value="5">5x5</option>
                                 <option value="6">6x6</option>
                                 <option value="8" selected>8x8</option>
@@ -653,7 +719,7 @@
                         </div>
                         <div>
                             <label class="block text-[10px] mb-0.5">เรียงชนะ</label>
-                            <select id="online-win-count" onchange="syncOnlineSettings()" class="w-full px-1 py-1 text-xs font-bold">
+                            <select id="online-win-count" onchange="syncOnlineSettings()" class="w-full px-1.5 py-1 text-xs font-bold">
                                 <option value="3">3 ตัว</option>
                                 <option value="4" selected>4 ตัว</option>
                                 <option value="5">5 ตัว</option>
@@ -667,7 +733,7 @@
                                     <span>กำหนดเอง</span>
                                 </label>
                             </div>
-                            <select id="online-timer" onchange="syncOnlineSettings()" class="w-full px-1 py-1 text-xs font-bold">
+                            <select id="online-timer" onchange="syncOnlineSettings()" class="w-full px-1.5 py-1 text-xs font-bold">
                                 <option value="0">ไม่จำกัด</option>
                                 <option value="10">10 วินาที</option>
                                 <option value="15" selected>15 วินาที</option>
@@ -682,12 +748,12 @@
                     </div>
                 </div>
 
-                <div class="flex gap-2">
-                    <button type="button" onclick="leaveOnlineRoom()" class="w-1/3 py-2.5 mc-button-brown font-bold text-xs">
+                <div class="flex flex-col sm:flex-row gap-2">
+                    <button type="button" onclick="leaveOnlineRoom()" class="sm:w-1/3 py-2.5 mc-button-brown font-bold text-xs flex items-center justify-center gap-1.5">
                         <i class="fas fa-sign-out-alt"></i> ออกจากห้อง
                     </button>
-                    <button type="button" id="btn-start-online-game" onclick="startOnlineBattle()" class="w-2/3 py-2.5 mc-button-green font-bold text-xs flex items-center justify-center gap-1 shadow-md">
-                        <i class="fas fa-play"></i> เริ่มการแข่งขันออนไลน์ (Start Battle)
+                    <button type="button" id="btn-start-online-game" onclick="startOnlineBattle()" class="sm:w-2/3 py-2.5 mc-button-green font-bold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-md">
+                        <i class="fas fa-play text-[#FCA800]"></i> เริ่มการแข่งขันออนไลน์ (Start Battle)
                     </button>
                 </div>
             </div>
@@ -737,7 +803,9 @@
             </div>
         </div>
 
-        <!-- 6. GAME BATTLE SCREEN -->
+        <!-- ======================================================== -->
+        <!-- 5. GAME BATTLE SCREEN                                     -->
+        <!-- ======================================================== -->
         <div id="game-screen" class="hidden w-full max-w-3xl flex flex-col items-center gap-3">
             
             <!-- Players Scoreboard Cards -->
@@ -756,8 +824,8 @@
 
                 <!-- Turn Countdown Timer Bar -->
                 <div id="timer-wrapper" class="flex items-center gap-2 min-w-[130px] sm:min-w-[150px]">
-                    <i class="far fa-clock text-[#FCA800] text-xs"></i>
-                    <div class="flex-1 bg-black/20 border border-[#5C3A21] h-3 overflow-hidden p-0.5">
+                    <i class="far fa-clock text-[#FCA800] text-sm"></i>
+                    <div class="flex-1 bg-black/20 border border-[#5C3A21] h-3.5 overflow-hidden p-0.5">
                         <div id="timer-bar" class="bg-[#FCA800] h-full w-full transition-all duration-300"></div>
                     </div>
                     <span id="timer-text" class="text-xs font-pixel font-bold text-base min-w-[28px] text-right">15s</span>
@@ -898,6 +966,26 @@
             }
         };
 
+        function toggleSound() {
+            sound.soundEnabled = !sound.soundEnabled;
+            const icon = document.getElementById('sound-icon');
+            if (icon) {
+                icon.className = sound.soundEnabled ? "fas fa-volume-up text-[#40D3CA]" : "fas fa-volume-mute text-red-400";
+            }
+        }
+
+        function toggleBGM() {
+            sound.bgmEnabled = !sound.bgmEnabled;
+            const icon = document.getElementById('bgm-icon');
+            if (sound.bgmEnabled) {
+                if (icon) icon.className = "fas fa-music text-[#40D3CA] animate-bounce";
+                sound.startBGM();
+            } else {
+                if (icon) icon.className = "fas fa-music text-[#FCA800]";
+                sound.stopBGM();
+            }
+        }
+
         const COLOR_OPTIONS = [
             { name: "🟩 Emerald (เขียว)", bgClass: "bg-[#557A2B]", textClass: "text-[#2F4518]", borderClass: "border-[#80B342]", pitch: 0.9 },
             { name: "💎 Diamond (ฟ้า)", bgClass: "bg-[#40D3CA]", textClass: "text-[#185E5A]", borderClass: "border-[#89FFF8]", pitch: 1.2 },
@@ -919,9 +1007,7 @@
             "⚡️", "💥", "💫", "✨", "🔥", "🌊", "❄️", "🪐", "☀️", "🌙",
             "❌", "⭕", "🔺", "🔲", "🔴", "🔵", "🟡", "🟢", "🟣", "⬛",
             "🐶", "🐱", "🦊", "🐻", "🐼", "🐯", "🦁", "🐮", "🐵", "🐔",
-            "🐧", "🐦", "🦅", "🦉", "🦇", "🦄", "🐝", "🐢", "🐍", "🦖",
-            "🐙", "🦀", "🐬", "🦈", "🦩", "🕊️", "🐇", "🦔", "🐾", "🍀",
-            "🍕", "🍔", "🍟", "🌭", "🍿", "🍩", "🍦", "🍣", "🧋", "🍉"
+            "🐧", "🐦", "🦅", "🦉", "🦇", "🦄", "🐝", "🐢", "🐍", "🦖"
         ];
 
         const ALL_SYMBOLS = [...MC_SYMBOLS, ...IOS_SYMBOLS];
@@ -931,7 +1017,6 @@
             ["Hero", "Dragon", "Miner", "Builder", "Hunter", "Knight", "Master", "Wizard"]
         ];
 
-        /* Game State Variables */
         let gameMode = 'local';
         let localPlayerCount = 4;
         let gridSize = 8;
@@ -951,12 +1036,13 @@
         let currentPickingPlayerIdx = null;
         let isPickingForHost = false;
         let isPickingForJoin = false;
-        let currentIconCategory = 'all';
+        let isPickingForOnlineLobby = false;
+        let onlineLobbyPickingSlot = null;
         let currentIconList = ALL_SYMBOLS;
         let iconCurrentPage = 0;
         const ICONS_PER_PAGE = 24;
 
-        /* Online State Variables */
+        /* Online PeerJS State */
         let onlineTargetPlayerCount = 4;
         let onlineRoomCode = "";
         let onlineRoomPass = "";
@@ -965,7 +1051,7 @@
 
         let onlinePeer = null;
         let onlineHostConnection = null;
-        const onlineHostConnections = new Map(); // peerId -> conn
+        const onlineHostConnections = new Map();
         let onlinePeerId = "";
         let onlineTurnStartedAt = 0;
         let onlineLastResult = null;
@@ -1020,9 +1106,9 @@
                 const btn = document.getElementById(`local-count-${c}`);
                 if (!btn) return;
                 if (c === count) {
-                    btn.className = "py-2 font-bold text-xs border-2 border-[#5C3A21] bg-[#557A2B] text-white shadow-sm transition";
+                    btn.className = "py-2.5 px-2 font-bold text-xs border-2 border-[#5C3A21] bg-[#557A2B] text-white flex flex-col items-center gap-1 shadow-xs transition";
                 } else {
-                    btn.className = "py-2 font-bold text-xs border-2 border-[#5C3A21] bg-[#8A5A36] text-white opacity-80 hover:opacity-100 transition";
+                    btn.className = "py-2.5 px-2 font-bold text-xs border-2 border-[#5C3A21] bg-[#8A5A36] text-white opacity-80 hover:opacity-100 flex flex-col items-center gap-1 transition";
                 }
             });
 
@@ -1039,7 +1125,7 @@
             for (let idx = 0; idx < slotsToRender; idx++) {
                 const p = DEFAULT_PLAYERS_CONFIG[idx] || {
                     id: idx,
-                    defaultName: `Player ${idx + 1} (ผู้เล่น ${idx + 1})`,
+                    defaultName: `Player ${idx + 1}`,
                     symbol: ALL_SYMBOLS[idx % ALL_SYMBOLS.length],
                     colorIndex: idx % COLOR_OPTIONS.length
                 };
@@ -1049,36 +1135,34 @@
                 const defaultName = isBotDefault ? `บอท AI ${idx + 1}` : p.defaultName;
 
                 const card = document.createElement('div');
-                card.className = "bg-black/10 p-3 border-2 border-[#5C3A21] flex flex-col gap-2";
+                card.className = "bg-black/10 p-3 sm:p-3.5 border-2 border-[#5C3A21] flex flex-col gap-2 rounded shadow-xs";
                 
                 card.innerHTML = `
                     <div class="flex items-center justify-between">
-                        <span class="text-sm font-bold flex items-center gap-1.5" id="p-badge-preview-${idx}">
-                            <span class="w-3.5 h-3.5 ${colorTheme.bgClass} border border-black inline-block" id="p-color-dot-${idx}"></span> ผู้เล่นที่ ${idx + 1}
+                        <span class="text-xs font-bold flex items-center gap-1.5" id="p-badge-preview-${idx}">
+                            <span class="w-3.5 h-3.5 ${colorTheme.bgClass} border border-black inline-block rounded-xs" id="p-color-dot-${idx}"></span>
+                            <span>ผู้เล่นที่ ${idx + 1}</span>
                         </span>
-                        <label class="text-xs font-bold cursor-pointer flex items-center gap-1.5 text-[#3B2414] bg-[#FFF3D6] px-2 py-1 border border-[#5C3A21]">
+                        <label class="text-[11px] font-bold cursor-pointer flex items-center gap-1.5 bg-[#FAF4E8] px-2 py-0.5 border border-[#5C3A21]">
                             <input type="checkbox" id="p-bot-${idx}" ${isBotDefault ? 'checked' : ''} class="focus:ring-0 cursor-pointer w-3.5 h-3.5">
                             <span>🤖 เปิดบอท (AI)</span>
                         </label>
                     </div>
 
                     <div class="grid grid-cols-1 sm:grid-cols-3 gap-1.5">
-                        <input type="text" id="p-name-${idx}" value="${defaultName}" placeholder="กรอกชื่อผู้เล่น..." 
-                            class="col-span-1 sm:col-span-1 px-2 py-2 text-sm font-bold">
+                        <input type="text" id="p-name-${idx}" value="${defaultName}" placeholder="ชื่อผู้เล่น..." 
+                            class="col-span-1 sm:col-span-1 px-2.5 py-1.5 text-xs font-bold">
                         
                         <button type="button" onclick="openIconPicker(${idx})" id="p-symbol-btn-${idx}"
-                            class="col-span-1 sm:col-span-1 px-2 py-2 text-sm font-bold bg-[#E8DFCE] hover:bg-[#FFF3D6] border-2 border-[#5C3A21] flex items-center justify-between gap-1 transition">
-                            <span id="p-symbol-disp-${idx}" class="text-base font-bold">${p.symbol}</span>
-                            <span class="text-[11px] font-semibold text-[#5C3A21]">เปลี่ยน 🎨</span>
+                            class="col-span-1 sm:col-span-1 px-2 py-1.5 text-xs font-bold bg-[#FAF4E8] hover:bg-white border-2 border-[#5C3A21] flex items-center justify-between gap-1 transition">
+                            <span id="p-symbol-disp-${idx}" class="text-sm font-bold">${p.symbol}</span>
+                            <span class="text-[10px] opacity-70">เปลี่ยน 🎨</span>
                         </button>
                         <input type="hidden" id="p-symbol-${idx}" value="${p.symbol}">
 
-                        <select id="p-color-${idx}" onchange="updatePlayerColorPreview(${idx})" class="col-span-1 sm:col-span-1 px-1 py-2 text-sm font-bold">
+                        <select id="p-color-${idx}" onchange="updatePlayerColorPreview(${idx})" class="col-span-1 sm:col-span-1 px-1.5 py-1.5 text-xs font-bold">
                             ${COLOR_OPTIONS.map((c, cIdx) => `<option value="${cIdx}" ${cIdx === p.colorIndex ? 'selected' : ''}>${c.name}</option>`).join('')}
                         </select>
-                    </div>
-                    <div id="p-warning-${idx}" class="hidden text-[11px] font-bold text-white bg-[#E53935] px-2 py-1 border border-[#68100E] flex items-center gap-1.5">
-                        <i class="fas fa-triangle-exclamation"></i> <span></span>
                     </div>
                 `;
                 container.appendChild(card);
@@ -1101,27 +1185,52 @@
                 colorCounts[colorEl.value] = (colorCounts[colorEl.value] || 0) + 1;
             }
 
+            let hasDuplicate = false;
             for (let idx = 0; idx < slotsToRender; idx++) {
                 const symEl = document.getElementById(`p-symbol-${idx}`);
                 const colorEl = document.getElementById(`p-color-${idx}`);
-                const warnBox = document.getElementById(`p-warning-${idx}`);
-                if (!symEl || !colorEl || !warnBox) continue;
-
-                const dupSymbol = symbolCounts[symEl.value] > 1;
-                const dupColor = colorCounts[colorEl.value] > 1;
-
-                if (dupSymbol || dupColor) {
-                    let msg = 'ซ้ำกับผู้เล่นอื่น: ';
-                    const parts = [];
-                    if (dupSymbol) parts.push('สัญลักษณ์');
-                    if (dupColor) parts.push('สี');
-                    msg += parts.join(' และ ') + ' — เปลี่ยนเพื่อไม่ให้สับสนกลางเกม';
-                    warnBox.querySelector('span').textContent = msg;
-                    warnBox.classList.remove('hidden');
-                } else {
-                    warnBox.classList.add('hidden');
+                if (!symEl || !colorEl) continue;
+                if (symbolCounts[symEl.value] > 1 || colorCounts[colorEl.value] > 1) {
+                    hasDuplicate = true;
+                    break;
                 }
             }
+
+            const warningBox = document.getElementById('duplicate-warning-box');
+            if (warningBox) {
+                if (hasDuplicate) warningBox.classList.remove('hidden');
+                else warningBox.classList.add('hidden');
+            }
+        }
+
+        function autoFixDuplicates() {
+            sound.playTick();
+            const slotsToRender = localPlayerCount === 1 ? 2 : localPlayerCount;
+            const usedSymbols = new Set();
+            const usedColors = new Set();
+
+            for (let idx = 0; idx < slotsToRender; idx++) {
+                const symDisp = document.getElementById(`p-symbol-disp-${idx}`);
+                const symInput = document.getElementById(`p-symbol-${idx}`);
+                const colorSelect = document.getElementById(`p-color-${idx}`);
+
+                let chosenSym = symInput.value;
+                if (usedSymbols.has(chosenSym)) {
+                    chosenSym = ALL_SYMBOLS.find(s => !usedSymbols.has(s)) || ALL_SYMBOLS[idx];
+                    symDisp.textContent = chosenSym;
+                    symInput.value = chosenSym;
+                }
+                usedSymbols.add(chosenSym);
+
+                let chosenColor = parseInt(colorSelect.value);
+                if (usedColors.has(chosenColor)) {
+                    chosenColor = [0,1,2,3,4,5].find(c => !usedColors.has(c)) ?? idx;
+                    colorSelect.value = chosenColor;
+                }
+                usedColors.add(chosenColor);
+                updatePlayerColorPreview(idx);
+            }
+            checkPlayerDuplicates();
         }
 
         function randomizeAllPlayers() {
@@ -1173,6 +1282,7 @@
         function openIconPicker(playerIdx) {
             isPickingForHost = false;
             isPickingForJoin = false;
+            isPickingForOnlineLobby = false;
             currentPickingPlayerIdx = playerIdx;
             const nameInput = document.getElementById(`p-name-${playerIdx}`);
             const playerName = nameInput && nameInput.value.trim() ? nameInput.value.trim() : `ผู้เล่น ${playerIdx + 1}`;
@@ -1184,6 +1294,7 @@
         function openIconPickerForHost() {
             isPickingForHost = true;
             isPickingForJoin = false;
+            isPickingForOnlineLobby = false;
             currentPickingPlayerIdx = null;
             const nameInput = document.getElementById('host-player-name');
             const playerName = nameInput && nameInput.value.trim() ? nameInput.value.trim() : 'Host Master';
@@ -1195,6 +1306,7 @@
         function openIconPickerForJoin() {
             isPickingForHost = false;
             isPickingForJoin = true;
+            isPickingForOnlineLobby = false;
             currentPickingPlayerIdx = null;
             const nameInput = document.getElementById('join-modal-player-name');
             const playerName = nameInput && nameInput.value.trim() ? nameInput.value.trim() : 'Guest Player';
@@ -1203,12 +1315,31 @@
             document.getElementById('icon-picker-modal').classList.remove('hidden');
         }
 
+        function openIconPickerInOnlineLobby(slotIdx) {
+            sound.playTick();
+            isPickingForHost = false;
+            isPickingForJoin = false;
+            isPickingForOnlineLobby = true;
+            onlineLobbyPickingSlot = slotIdx;
+
+            // Notify everyone in room that this player is editing
+            updateMyOnlineStatus({ isEditing: true });
+
+            const p = players[slotIdx];
+            document.getElementById('icon-picker-player-name').textContent = p ? p.name : 'ของคุณ';
+            filterIcons('all');
+            document.getElementById('icon-picker-modal').classList.remove('hidden');
+        }
+
         function closeIconPicker() {
             document.getElementById('icon-picker-modal').classList.add('hidden');
+            if (isPickingForOnlineLobby) {
+                updateMyOnlineStatus({ isEditing: false });
+                isPickingForOnlineLobby = false;
+            }
         }
 
         function filterIcons(cat) {
-            currentIconCategory = cat;
             const btnAll = document.getElementById('cat-btn-all');
             const btnMc = document.getElementById('cat-btn-mc');
             const btnIos = document.getElementById('cat-btn-ios');
@@ -1254,7 +1385,7 @@
             pageIcons.forEach(sym => {
                 const btn = document.createElement('button');
                 btn.type = 'button';
-                btn.className = "w-9 h-9 text-lg flex items-center justify-center bg-[#E8DFCE] hover:bg-[#FFF3D6] border-2 border-[#5C3A21] hover:border-[#557A2B] transition";
+                btn.className = "w-9 h-9 text-lg flex items-center justify-center bg-[#FAF4E8] hover:bg-white border-2 border-[#5C3A21] hover:border-[#557A2B] transition";
                 btn.textContent = sym;
                 btn.onclick = () => selectIcon(sym);
                 grid.appendChild(btn);
@@ -1272,6 +1403,8 @@
             } else if (isPickingForJoin) {
                 document.getElementById('join-modal-symbol-disp').textContent = symbol;
                 document.getElementById('join-modal-symbol').value = symbol;
+            } else if (isPickingForOnlineLobby && onlineLobbyPickingSlot !== null) {
+                updateMyOnlineStatus({ symbol: symbol, isEditing: false });
             } else if (currentPickingPlayerIdx !== null) {
                 document.getElementById(`p-symbol-disp-${currentPickingPlayerIdx}`).textContent = symbol;
                 document.getElementById(`p-symbol-${currentPickingPlayerIdx}`).value = symbol;
@@ -1287,7 +1420,7 @@
             const theme = COLOR_OPTIONS[colorIndex % COLOR_OPTIONS.length];
             const colorDot = document.getElementById(`p-color-dot-${playerIdx}`);
             if (colorDot) {
-                colorDot.className = `w-3.5 h-3.5 ${theme.bgClass} border border-black inline-block`;
+                colorDot.className = `w-3.5 h-3.5 ${theme.bgClass} border border-black inline-block rounded-xs`;
             }
             checkPlayerDuplicates();
         }
@@ -1395,7 +1528,9 @@
                     pitch: theme.pitch,
                     isBot: false,
                     score: 0,
-                    isHost: true
+                    isHost: true,
+                    isReady: true,
+                    isEditing: false
                 }
             ];
 
@@ -1413,7 +1548,9 @@
                     isBot: false,
                     score: 0,
                     isHost: false,
-                    isPlaceholder: true
+                    isPlaceholder: true,
+                    isReady: false,
+                    isEditing: false
                 });
             }
 
@@ -1462,7 +1599,7 @@
             players = [{
                 id: 1, name: playerName, symbol, colorIndex: colorIdx, bgClass: theme.bgClass,
                 textClass: theme.textClass, borderClass: theme.borderClass, pitch: theme.pitch,
-                isBot: false, score: 0, isHost: false, isPlaceholder: false
+                isBot: false, score: 0, isHost: false, isPlaceholder: false, isReady: false, isEditing: false
             }];
             myOnlineSlotIndex = 1;
             closeJoinPlayerModal();
@@ -1490,7 +1627,6 @@
             setupPeerNetworking();
         }
 
-        // ป้องกัน PeerJS ID ชนกันบน GitHub Pages โดยเพิ่ม Unique Suffix
         function getRoomPeerId() {
             return `xo-mooaod-room-${onlineRoomCode}`;
         }
@@ -1500,7 +1636,8 @@
                 id: player.id, name: player.name, symbol: player.symbol, colorIndex: player.colorIndex,
                 bgClass: player.bgClass, textClass: player.textClass, borderClass: player.borderClass,
                 pitch: player.pitch, isBot: !!player.isBot, score: player.score || 0,
-                isHost: !!player.isHost, isPlaceholder: !!player.isPlaceholder, peerId: player.peerId || null
+                isHost: !!player.isHost, isPlaceholder: !!player.isPlaceholder, peerId: player.peerId || null,
+                isReady: !!player.isReady, isEditing: !!player.isEditing
             };
         }
 
@@ -1539,7 +1676,6 @@
                 });
 
                 onlinePeer.on('connection', conn => {
-                    conn.on('open', () => {});
                     conn.on('data', data => handleHostPeerMessage(conn, data));
                     conn.on('close', () => {
                         onlineHostConnections.delete(conn.peer);
@@ -1549,6 +1685,8 @@
                             players[idx].isPlaceholder = true;
                             players[idx].peerId = null;
                             players[idx].isBot = false;
+                            players[idx].isReady = false;
+                            players[idx].isEditing = false;
                             broadcastRoomState();
                             renderOnlineSlots();
                         }
@@ -1556,7 +1694,6 @@
                 });
 
                 onlinePeer.on('error', err => {
-                    console.error("PeerJS Host Error:", err);
                     if (err.type === 'unavailable-id') {
                         alert('เลขห้องนี้มีผู้ใช้งานอยู่แล้ว กรุณาสุ่มเลขห้องใหม่');
                         goToModeSelection();
@@ -1592,13 +1729,11 @@
                         goToModeSelection(); 
                     });
                     conn.on('error', (err) => {
-                        console.error("PeerJS Guest Error:", err);
                         alert('ไม่สามารถเชื่อมต่อไปยังห้องได้ ตรวจสอบเลขห้องและรหัสผ่านอีกครั้ง');
                     });
                 });
 
                 onlinePeer.on('error', err => {
-                    console.error("PeerJS Client Error:", err);
                     if (err.type === 'peer-unavailable') {
                         alert('ไม่พบห้องเลขที่ระบุนี้ หรือ Host ยังไม่ได้เปิดห้อง');
                     }
@@ -1628,7 +1763,7 @@
                 players[idx] = {
                     id: idx, 
                     name: String(incoming.name || `ผู้เล่น ${idx + 1}`).slice(0, 24), 
-                    symbol: incoming.symbol || '🙂',
+                    symbol: incoming.symbol || '🗡️',
                     colorIndex: parseInt(incoming.colorIndex) || 0, 
                     bgClass: theme.bgClass, 
                     textClass: theme.textClass,
@@ -1638,7 +1773,9 @@
                     score: 0,
                     isHost: false, 
                     isPlaceholder: false, 
-                    peerId: conn.peer
+                    peerId: conn.peer,
+                    isReady: false,
+                    isEditing: false
                 };
 
                 onlineHostConnections.set(conn.peer, conn);
@@ -1651,7 +1788,22 @@
             const idx = players.findIndex(p => p.peerId === conn.peer);
             if (idx < 0) return;
 
-            if (data.type === 'move-request') {
+            if (data.type === 'update-profile') {
+                if (data.symbol !== undefined) players[idx].symbol = data.symbol;
+                if (data.colorIndex !== undefined) {
+                    const cIdx = parseInt(data.colorIndex) % COLOR_OPTIONS.length;
+                    const theme = COLOR_OPTIONS[cIdx];
+                    players[idx].colorIndex = cIdx;
+                    players[idx].bgClass = theme.bgClass;
+                    players[idx].textClass = theme.textClass;
+                    players[idx].borderClass = theme.borderClass;
+                    players[idx].pitch = theme.pitch;
+                }
+                if (data.isReady !== undefined) players[idx].isReady = !!data.isReady;
+                if (data.isEditing !== undefined) players[idx].isEditing = !!data.isEditing;
+                broadcastRoomState();
+                renderOnlineSlots();
+            } else if (data.type === 'move-request') {
                 if (!isGameActive || currentTurn !== idx || players[idx].isBot) return;
                 const r = Number(data.r), c = Number(data.c);
                 if (!Number.isInteger(r) || !Number.isInteger(c) || r < 0 || c < 0 || r >= gridSize || c >= gridSize || board[r][c] !== null) return;
@@ -1682,6 +1834,37 @@
                 document.getElementById('game-screen').classList.remove('hidden');
                 return;
             }
+        }
+
+        function updateMyOnlineStatus(updates) {
+            if (myOnlineSlotIndex < 0 || !players[myOnlineSlotIndex]) return;
+
+            if (updates.symbol !== undefined) players[myOnlineSlotIndex].symbol = updates.symbol;
+            if (updates.colorIndex !== undefined) {
+                const cIdx = parseInt(updates.colorIndex) % COLOR_OPTIONS.length;
+                const theme = COLOR_OPTIONS[cIdx];
+                players[myOnlineSlotIndex].colorIndex = cIdx;
+                players[myOnlineSlotIndex].bgClass = theme.bgClass;
+                players[myOnlineSlotIndex].textClass = theme.textClass;
+                players[myOnlineSlotIndex].borderClass = theme.borderClass;
+                players[myOnlineSlotIndex].pitch = theme.pitch;
+            }
+            if (updates.isReady !== undefined) players[myOnlineSlotIndex].isReady = !!updates.isReady;
+            if (updates.isEditing !== undefined) players[myOnlineSlotIndex].isEditing = !!updates.isEditing;
+
+            if (isOnlineHost) {
+                broadcastRoomState();
+                renderOnlineSlots();
+            } else if (onlineHostConnection) {
+                onlineHostConnection.send({ type: 'update-profile', ...updates });
+                renderOnlineSlots();
+            }
+        }
+
+        function toggleOnlineReady() {
+            sound.playTick();
+            const current = players[myOnlineSlotIndex]?.isReady || false;
+            updateMyOnlineStatus({ isReady: !current });
         }
 
         function broadcastRoomState() {
@@ -1729,24 +1912,86 @@
             container.innerHTML = '';
 
             let connectedCount = 0;
+            
+            // Collect used icons and colors to flag duplicate warnings
+            const usedSymbols = {};
+            const usedColors = {};
+            players.forEach(p => {
+                if (!p.isPlaceholder) {
+                    usedSymbols[p.symbol] = (usedSymbols[p.symbol] || 0) + 1;
+                    usedColors[p.colorIndex] = (usedColors[p.colorIndex] || 0) + 1;
+                }
+            });
+
             players.forEach((p, idx) => {
                 if (!p.isPlaceholder) connectedCount++;
 
+                const isMe = idx === myOnlineSlotIndex;
+                const hasDupSym = usedSymbols[p.symbol] > 1;
+                const hasDupColor = usedColors[p.colorIndex] > 1;
+
                 const slotCard = document.createElement('div');
-                slotCard.className = `mc-card p-2.5 flex items-center justify-between border ${p.isPlaceholder ? 'opacity-60 border-dashed' : ''}`;
+                slotCard.className = `mc-card p-3 flex flex-col sm:flex-row items-start sm:items-center justify-between border-2 gap-3 ${
+                    p.isPlaceholder ? 'opacity-60 border-dashed' : ''
+                } ${p.isEditing ? 'pulse-editing' : ''}`;
+
+                let statusBadgeHTML = '';
+                if (p.isPlaceholder) {
+                    statusBadgeHTML = `<span class="text-[10px] font-bold px-2 py-0.5 bg-[#8A5A36] text-white">รอคนเข้า...</span>`;
+                } else if (p.isEditing) {
+                    statusBadgeHTML = `<span class="text-[10px] font-bold px-2 py-0.5 bg-[#FCA800] text-[#3B2414] animate-pulse">🎨 กำลังเลือกสี...</span>`;
+                } else if (p.isReady || p.isHost) {
+                    statusBadgeHTML = `<span class="text-[10px] font-bold px-2 py-0.5 bg-[#557A2B] text-white">✅ พร้อมเล่น</span>`;
+                } else {
+                    statusBadgeHTML = `<span class="text-[10px] font-bold px-2 py-0.5 bg-[#E53935] text-white">⏳ ยังไม่กดพร้อม</span>`;
+                }
+
+                let controlsHTML = '';
+                if (isMe && !p.isPlaceholder) {
+                    controlsHTML = `
+                        <div class="flex items-center gap-2 w-full sm:w-auto">
+                            <!-- Change Symbol Button -->
+                            <button type="button" onclick="openIconPickerInOnlineLobby(${idx})" 
+                                class="px-2.5 py-1.5 bg-[#FAF4E8] hover:bg-white border-2 border-[#5C3A21] text-xs font-bold flex items-center gap-1.5">
+                                <span>${p.symbol}</span>
+                                <span class="text-[10px] opacity-75">เปลี่ยนไอคอน 🎨</span>
+                            </button>
+
+                            <!-- Change Color Dropdown -->
+                            <select onchange="updateMyOnlineStatus({ colorIndex: this.value })" 
+                                class="px-2 py-1.5 text-xs font-bold border-2 border-[#5C3A21]">
+                                ${COLOR_OPTIONS.map((c, cIdx) => `<option value="${cIdx}" ${cIdx === p.colorIndex ? 'selected' : ''}>${c.name}</option>`).join('')}
+                            </select>
+
+                            <!-- Ready Button (Non-host only) -->
+                            ${!p.isHost ? `
+                                <button type="button" onclick="toggleOnlineReady()" 
+                                    class="px-3 py-1.5 ${p.isReady ? 'mc-button-brown' : 'mc-button-green'} text-xs font-bold shadow-xs">
+                                    ${p.isReady ? 'ยกเลิกพร้อม' : 'กดพร้อม (Ready)'}
+                                </button>
+                            ` : ''}
+                        </div>
+                    `;
+                }
+
                 slotCard.innerHTML = `
-                    <div class="flex items-center gap-2">
-                        <div class="w-8 h-8 rounded ${p.bgClass} flex items-center justify-center text-sm font-bold text-white border border-black">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded ${p.bgClass} flex items-center justify-center text-xl font-bold text-white shadow-sm shrink-0 border-2 border-black">
                             ${p.symbol}
                         </div>
                         <div>
-                            <div class="text-xs font-bold">${p.name}</div>
-                            <div class="text-[10px] opacity-75">${idx === 0 ? '👑 ผู้สร้างห้อง (Host)' : (p.isPlaceholder ? 'กำลังรอผู้เล่น...' : 'ผู้เล่นออนไลน์')}</div>
+                            <div class="text-xs font-bold flex items-center gap-2">
+                                <span>${p.name}</span>
+                                ${isMe ? '<span class="text-[10px] text-[#557A2B] bg-[#E8F5D6] px-1.5 py-0.2 border border-[#88B358]">(คุณ)</span>' : ''}
+                                ${p.isHost ? '<span class="text-[10px] text-[#FCA800] bg-[#3B2414] px-1.5 py-0.2 border border-[#8A5A36]">👑 Host</span>' : ''}
+                            </div>
+                            <div class="flex items-center gap-1.5 mt-0.5">
+                                ${statusBadgeHTML}
+                                ${(hasDupSym || hasDupColor) ? '<span class="text-[10px] text-[#E53935] font-bold">⚠️ เลือกซ้ำกับเพื่อน</span>' : ''}
+                            </div>
                         </div>
                     </div>
-                    <div class="text-[10px] font-bold px-2 py-0.5 ${p.isPlaceholder ? 'bg-[#8A5A36] text-white' : 'bg-[#557A2B] text-white'}">
-                        ${p.isPlaceholder ? 'ว่าง' : 'พร้อม'}
-                    </div>
+                    ${controlsHTML}
                 `;
                 container.appendChild(slotCard);
             });
@@ -1828,6 +2073,15 @@
         function startOnlineBattle() {
             sound.playTick();
             if (!isOnlineHost) return;
+
+            // Check if players are editing or duplicate icons exist
+            const activePlayers = players.filter(p => !p.isPlaceholder);
+            const notReady = activePlayers.filter(p => !p.isHost && !p.isReady);
+            if (notReady.length > 0) {
+                if (!confirm(`มีผู้เล่นอีก ${notReady.length} คนยังไม่ได้กด "พร้อม" คุณต้องการบังคับเริ่มเกมเลยหรือไม่?`)) {
+                    return;
+                }
+            }
             
             gridSize = parseInt(document.getElementById('online-grid-size').value) || 8;
             winCount = parseInt(document.getElementById('online-win-count').value) || 4;
@@ -1962,6 +2216,7 @@
 
         function renderBoard() {
             const boardEl = document.getElementById('board');
+            if (!boardEl) return;
             boardEl.style.display = 'grid';
             boardEl.style.gridTemplateColumns = `repeat(${gridSize}, minmax(0, 1fr))`;
             boardEl.style.gap = '5px';
@@ -1982,125 +2237,35 @@
             }
         }
 
-        function updateTurnDisplay() {
-            const badge = document.getElementById('turn-indicator-badge');
-            const statusText = document.getElementById('game-status-text');
-            const p = players[currentTurn];
-
-            badge.className = `px-2.5 py-1 font-bold text-xs flex items-center gap-1.5 border ${p.borderClass} ${p.textClass} bg-white shadow-xs`;
-            badge.innerHTML = `<span class="w-2.5 h-2.5 ${p.bgClass} inline-block border border-black"></span> ${p.symbol} ${p.name}`;
-
-            if (gameMode === 'online' && !isOnlineHost) {
-                if (myOnlineSlotIndex === currentTurn) {
-                    statusText.textContent = `ตาของคุณ! (${p.name})`;
-                } else {
-                    statusText.textContent = `ตารอ ${p.name} เดิน...`;
-                }
-            } else {
-                if (p.isBot) {
-                    statusText.textContent = 'บอทกำลังคิด...';
-                } else {
-                    statusText.textContent = `ตาของ ${p.name}`;
-                }
-            }
-        }
-
-        function startTurnTimer() {
-            if (timerInterval) clearInterval(timerInterval);
-
-            const timerWrapper = document.getElementById('timer-wrapper');
-            if (turnTimerDuration === 0) {
-                timerWrapper.classList.add('hidden');
-                return;
-            }
-            timerWrapper.classList.remove('hidden');
-
-            remainingTime = turnTimerDuration;
-            updateTimerUI();
-
-            timerInterval = setInterval(() => {
-                if (!isGameActive) return;
-                remainingTime--;
-                updateTimerUI();
-
-                if (remainingTime <= 3 && remainingTime > 0) {
-                    sound.playTick();
-                }
-
-                if (remainingTime <= 0) {
-                    clearInterval(timerInterval);
-                    if (gameMode !== 'online' || isOnlineHost) handleTimeOut();
-                }
-            }, 1000);
-        }
-
-        function handleTimeOut() {
-            if (!isGameActive) return;
-            sound.playUndo();
-            const p = players[currentTurn];
-            
-            const statusText = document.getElementById('game-status-text');
-            if (statusText) {
-                statusText.innerHTML = `<span class="text-[#E53935] font-bold">⏱️ ${p.name} หมดเวลา! ข้ามตา</span>`;
-            }
-
-            currentTurn = (currentTurn + 1) % players.length;
-
-            setTimeout(() => {
-                if (!isGameActive) return;
-                renderScoreboard();
-                updateTurnDisplay();
-                startTurnTimer();
-
-                if (players[currentTurn].isBot && isGameActive) {
-                    setTimeout(makeBotMove, 400);
-                }
-                if (gameMode === 'online' && isOnlineHost) broadcastGameState();
-            }, 800);
-        }
-
-        function updateTimerUI() {
-            const bar = document.getElementById('timer-bar');
-            const text = document.getElementById('timer-text');
-            const pct = Math.max(0, (remainingTime / turnTimerDuration) * 100);
-
-            bar.style.width = `${pct}%`;
-            text.textContent = `${remainingTime}s`;
-
-            if (pct < 30) {
-                bar.className = "bg-[#E53935] h-full w-full transition-all duration-300";
-            } else {
-                bar.className = "bg-[#FCA800] h-full w-full transition-all duration-300";
-            }
-        }
-
         function handleCellClick(r, c) {
             if (!isGameActive) return;
             if (board[r][c] !== null) return;
 
+            const p = players[currentTurn];
+            if (!p) return;
+
+            if (p.isBot) return;
+
             if (gameMode === 'online') {
+                if (currentTurn !== myOnlineSlotIndex) return;
                 if (!isOnlineHost) {
-                    // หากเป็นผู้เล่นออนไลน์ฝั่ง Guest ให้ส่งคำขอเดินไปยัง Host
-                    if (myOnlineSlotIndex !== currentTurn) return;
-                    try { onlineHostConnection?.send({ type: 'move-request', r, c }); } catch (e) {}
+                    onlineHostConnection?.send({ type: 'move-request', r, c });
                     return;
-                } else {
-                    // ถ้า Host เป็นบอทในช่องนั้น ห้ามคลิกเอง
-                    if (players[currentTurn].isBot) return;
                 }
-            } else {
-                if (players[currentTurn].isBot) return;
             }
 
             executeMove(r, c);
+            if (gameMode === 'online' && isOnlineHost) broadcastGameState();
         }
 
-        function executeMove(r, c, isRemote = false) {
+        function executeMove(r, c, fromRemote = false) {
             const p = players[currentTurn];
-            board[r][c] = p.id;
-            moveHistory.push({ r, c, playerId: p.id });
+            if (!p || board[r][c] !== null) return;
 
-            sound.playMove(p.pitch);
+            board[r][c] = p.id;
+            moveHistory.push({ r, c, playerId: p.id, turnIndex: currentTurn });
+
+            sound.playMove(p.pitch || 1.0);
 
             const cell = document.getElementById(`cell-${r}-${c}`);
             if (cell) {
@@ -2111,13 +2276,11 @@
             const winLine = checkWin(r, c, p.id);
             if (winLine) {
                 handleWin(p, winLine);
-                if (gameMode === 'online' && isOnlineHost) broadcastGameState();
                 return;
             }
 
             if (checkDraw()) {
                 handleDraw();
-                if (gameMode === 'online' && isOnlineHost) broadcastGameState();
                 return;
             }
 
@@ -2127,73 +2290,107 @@
             startTurnTimer();
 
             if (players[currentTurn].isBot && isGameActive) {
-                setTimeout(makeBotMove, 450);
+                setTimeout(makeBotMove, 400);
             }
-
-            if (gameMode === 'online' && isOnlineHost) broadcastGameState();
         }
 
-        function makeBotMove() {
-            if (!isGameActive) return;
-            const botId = players[currentTurn].id;
-            let targetR = -1, targetC = -1;
+        function startTurnTimer(isRemoteSync = false) {
+            if (timerInterval) clearInterval(timerInterval);
+            if (turnTimerDuration <= 0) {
+                document.getElementById('timer-wrapper').classList.add('hidden');
+                return;
+            }
+            document.getElementById('timer-wrapper').classList.remove('hidden');
 
+            remainingTime = turnTimerDuration;
+            const timerBar = document.getElementById('timer-bar');
+            const timerText = document.getElementById('timer-text');
+
+            if (timerBar) timerBar.style.width = '100%';
+            if (timerText) timerText.textContent = `${remainingTime}s`;
+
+            timerInterval = setInterval(() => {
+                if (!isGameActive) {
+                    clearInterval(timerInterval);
+                    return;
+                }
+                remainingTime--;
+                const percentage = Math.max(0, (remainingTime / turnTimerDuration) * 100);
+                if (timerBar) timerBar.style.width = `${percentage}%`;
+                if (timerText) timerText.textContent = `${remainingTime}s`;
+
+                if (remainingTime <= 0) {
+                    clearInterval(timerInterval);
+                    handleTimeOut();
+                }
+            }, 1000);
+        }
+
+        function handleTimeOut() {
+            if (!isGameActive) return;
+            sound.playTick();
+            
+            // Auto move for player if timed out
+            const emptyCells = [];
             for (let r = 0; r < gridSize; r++) {
                 for (let c = 0; c < gridSize; c++) {
-                    if (board[r][c] === null) {
-                        board[r][c] = botId;
-                        if (checkWin(r, c, botId)) {
-                            targetR = r; targetC = c;
-                            board[r][c] = null;
-                            break;
-                        }
-                        board[r][c] = null;
-                    }
-                }
-                if (targetR !== -1) break;
-            }
-
-            if (targetR === -1) {
-                const emptyCells = [];
-                for (let r = 0; r < gridSize; r++) {
-                    for (let c = 0; c < gridSize; c++) {
-                        if (board[r][c] === null) emptyCells.push({r, c});
-                    }
-                }
-                if (emptyCells.length > 0) {
-                    const choice = emptyCells[Math.floor(Math.random() * emptyCells.length)];
-                    targetR = choice.r;
-                    targetC = choice.c;
+                    if (board[r][c] === null) emptyCells.push({r, c});
                 }
             }
-
-            if (targetR !== -1 && targetC !== -1) {
-                executeMove(targetR, targetC);
+            if (emptyCells.length > 0) {
+                const randomPick = emptyCells[Math.floor(Math.random() * emptyCells.length)];
+                executeMove(randomPick.r, randomPick.c);
+                if (gameMode === 'online' && isOnlineHost) broadcastGameState();
             }
         }
 
-        function checkWin(r, c, playerId) {
+        function updateTurnDisplay() {
+            const p = players[currentTurn];
+            if (!p) return;
+
+            const badge = document.getElementById('turn-indicator-badge');
+            const statusText = document.getElementById('game-status-text');
+
+            if (badge) {
+                badge.className = `px-2.5 py-1 font-bold text-xs flex items-center gap-1.5 border-2 ${p.bgClass} text-white border-black`;
+                badge.innerHTML = `<span>${p.symbol}</span> <span>${p.name}</span>`;
+            }
+
+            if (statusText) {
+                if (gameMode === 'online') {
+                    if (currentTurn === myOnlineSlotIndex) {
+                        statusText.textContent = "ตาของคุณแล้ว!";
+                        statusText.className = "text-xs font-bold text-[#557A2B] animate-pulse";
+                    } else {
+                        statusText.textContent = `รอ ${p.name} วางหมาก...`;
+                        statusText.className = "text-xs font-bold opacity-80";
+                    }
+                } else {
+                    statusText.textContent = p.isBot ? "บอทกำลังคิด..." : "ถึงตาเลือก!";
+                    statusText.className = "text-xs font-bold";
+                }
+            }
+        }
+
+        function checkWin(lastR, lastC, playerId) {
             const directions = [
-                [[0, 1], [0, -1]],
-                [[1, 0], [-1, 0]],
-                [[1, 1], [-1, -1]],
-                [[1, -1], [-1, 1]]
+                [[0, 1], [0, -1]],   // Horizontal
+                [[1, 0], [-1, 0]],   // Vertical
+                [[1, 1], [-1, -1]],   // Diagonal \
+                [[1, -1], [-1, 1]]    // Diagonal /
             ];
 
-            for (let d = 0; d < directions.length; d++) {
-                const line = [{r, c}];
-                for (let dir = 0; dir < 2; dir++) {
-                    const [dr, dc] = directions[d][dir];
-                    let nr = r + dr;
-                    let nc = c + dc;
-
-                    while (nr >= 0 && nr < gridSize && nc >= 0 && nc < gridSize && board[nr][nc] === playerId) {
-                        line.push({r: nr, c: nc});
-                        nr += dr;
-                        nc += dc;
+            for (const dirPair of directions) {
+                let line = [{ r: lastR, c: lastC }];
+                for (const [dr, dc] of dirPair) {
+                    let r = lastR + dr;
+                    let c = lastC + dc;
+                    while (r >= 0 && r < gridSize && c >= 0 && c < gridSize && board[r][c] === playerId) {
+                        line.push({ r, c });
+                        r += dr;
+                        c += dc;
                     }
                 }
-
                 if (line.length >= winCount) {
                     return line;
                 }
@@ -2213,48 +2410,37 @@
         function handleWin(player, winLine) {
             isGameActive = false;
             if (timerInterval) clearInterval(timerInterval);
-
             player.score++;
             lastWinnerIndex = player.id;
-            onlineLastResult = { type: 'win', playerId: player.id, winLine };
-            renderScoreboard();
+
+            sound.playWin();
 
             winLine.forEach(pos => {
                 const cell = document.getElementById(`cell-${pos.r}-${pos.c}`);
                 if (cell) cell.classList.add('winning-cell');
             });
 
-            sound.playWin();
-            try { confetti({ particleCount: 70, spread: 70, origin: { y: 0.6 } }); } catch (e) {}
+            if (window.confetti) {
+                confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
+            }
+
+            onlineLastResult = { type: 'win', playerId: player.id, winLine };
+            if (gameMode === 'online' && isOnlineHost) broadcastGameState();
 
             setTimeout(() => {
-                const modal = document.getElementById('win-modal');
-                const avatar = document.getElementById('win-avatar-container');
-                avatar.className = `w-14 h-14 mx-auto border-2 flex items-center justify-center text-3xl mb-3 ${player.bgClass} text-white`;
-                avatar.textContent = player.symbol;
-                
-                document.getElementById('win-title').textContent = `🏆 ${player.name} ชนะ!`;
-                document.getElementById('win-subtitle').textContent = `เรียงสัญลักษณ์ครบบรรทัด ${winCount} ตัวสำเร็จ`;
-                modal.classList.remove('hidden');
+                showOnlineRoundResult(onlineLastResult);
             }, 600);
         }
 
         function handleDraw() {
             isGameActive = false;
             if (timerInterval) clearInterval(timerInterval);
-            onlineLastResult = { type: 'draw' };
 
-            document.getElementById('game-status-text').textContent = "🤝 เสมอกัน!";
+            onlineLastResult = { type: 'draw' };
+            if (gameMode === 'online' && isOnlineHost) broadcastGameState();
 
             setTimeout(() => {
-                const modal = document.getElementById('win-modal');
-                const avatar = document.getElementById('win-avatar-container');
-                avatar.className = 'w-14 h-14 mx-auto border-2 flex items-center justify-center text-3xl mb-3 bg-[#8A5A36] text-white';
-                avatar.textContent = "🤝";
-                
-                document.getElementById('win-title').textContent = "เสมอกัน!";
-                document.getElementById('win-subtitle').textContent = "ตารางเต็มแล้วโดยไม่มีผู้ชนะ";
-                modal.classList.remove('hidden');
+                showOnlineRoundResult(onlineLastResult);
             }, 500);
         }
 
@@ -2265,15 +2451,13 @@
         }
 
         function undoMove() {
-            if (moveHistory.length === 0) return;
-            sound.playUndo();
-
-            if (!isGameActive) {
-                isGameActive = true;
-                document.getElementById('win-modal').classList.add('hidden');
-                document.querySelectorAll('.winning-cell').forEach(el => el.classList.remove('winning-cell'));
+            if (moveHistory.length === 0 || !isGameActive) return;
+            if (gameMode === 'online') {
+                alert("ไม่สามารถย้อนกลับหมากในโหมดออนไลน์ได้");
+                return;
             }
 
+            sound.playUndo();
             const lastMove = moveHistory.pop();
             board[lastMove.r][lastMove.c] = null;
 
@@ -2283,32 +2467,82 @@
                 cell.innerHTML = '';
             }
 
-            currentTurn = lastMove.playerId;
+            currentTurn = lastMove.turnIndex;
             renderScoreboard();
             updateTurnDisplay();
             startTurnTimer();
         }
 
-        function toggleSound() {
-            sound.soundEnabled = !sound.soundEnabled;
-            const icon = document.getElementById('sound-icon');
-            icon.className = sound.soundEnabled ? "fas fa-volume-up text-[#40D3CA]" : "fas fa-volume-mute opacity-50";
-        }
+        function makeBotMove() {
+            if (!isGameActive) return;
 
-        function toggleBGM() {
-            sound.bgmEnabled = !sound.bgmEnabled;
-            const icon = document.getElementById('bgm-icon');
-            if (sound.bgmEnabled) {
-                sound.startBGM();
-                icon.className = "fas fa-music text-[#FCA800]";
-            } else {
-                sound.stopBGM();
-                icon.className = "fas fa-volume-mute opacity-50";
+            const p = players[currentTurn];
+            if (!p || !p.isBot) return;
+
+            let bestR = -1, bestC = -1;
+
+            // 1. Check if bot can win immediately
+            for (let r = 0; r < gridSize; r++) {
+                for (let c = 0; c < gridSize; c++) {
+                    if (board[r][c] === null) {
+                        board[r][c] = p.id;
+                        if (checkWin(r, c, p.id)) {
+                            bestR = r; bestC = c;
+                            board[r][c] = null;
+                            break;
+                        }
+                        board[r][c] = null;
+                    }
+                }
+                if (bestR !== -1) break;
+            }
+
+            // 2. Block opponent's winning move
+            if (bestR === -1) {
+                for (const opponent of players) {
+                    if (opponent.id === p.id) continue;
+                    for (let r = 0; r < gridSize; r++) {
+                        for (let c = 0; c < gridSize; c++) {
+                            if (board[r][c] === null) {
+                                board[r][c] = opponent.id;
+                                if (checkWin(r, c, opponent.id)) {
+                                    bestR = r; bestC = c;
+                                    board[r][c] = null;
+                                    break;
+                                }
+                                board[r][c] = null;
+                            }
+                        }
+                        if (bestR !== -1) break;
+                    }
+                    if (bestR !== -1) break;
+                }
+            }
+
+            // 3. Pick random valid cell near center
+            if (bestR === -1) {
+                const emptyCells = [];
+                for (let r = 0; r < gridSize; r++) {
+                    for (let c = 0; c < gridSize; c++) {
+                        if (board[r][c] === null) emptyCells.push({ r, c });
+                    }
+                }
+                if (emptyCells.length > 0) {
+                    const pick = emptyCells[Math.floor(Math.random() * emptyCells.length)];
+                    bestR = pick.r;
+                    bestC = pick.c;
+                }
+            }
+
+            if (bestR !== -1 && bestC !== -1) {
+                executeMove(bestR, bestC);
+                if (gameMode === 'online' && isOnlineHost) broadcastGameState();
             }
         }
 
         window.onload = function() {
-            goToModeSelection();
+            setLocalPlayerCount(4);
+            updateWinCountOptions();
         };
     </script>
 </body>
