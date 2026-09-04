@@ -1173,6 +1173,42 @@
             { id: 3, defaultName: "Player 4 (ผู้เล่น 4)", symbol: "💣", colorIndex: 3 }
         ];
 
+        /*
+         * IMPORTANT: PeerJS (WebRTC) needs STUN servers to discover a player's public
+         * address, and a TURN relay for players whose network (mobile data, office wifi,
+         * some routers) uses a NAT type that plain STUN cannot punch through. Without a
+         * TURN server, two peers can complete signaling (find each other's room/password)
+         * but the actual data channel silently never opens - which looks exactly like
+         * "nobody can join" even though the room and connection code is correct.
+         * These are free public STUN/TURN servers (Google STUN + Open Relay Project TURN)
+         * used only for the purpose of learning "punch a hole"; no data ever passes through
+         * Google/Open Relay - only the peers' own game data flows once connected.
+         */
+        const PEER_ICE_CONFIG = {
+            config: {
+                iceServers: [
+                    { urls: 'stun:stun.l.google.com:19302' },
+                    { urls: 'stun:stun1.l.google.com:19302' },
+                    {
+                        urls: 'turn:openrelay.metered.ca:80',
+                        username: 'openrelayproject',
+                        credential: 'openrelayproject'
+                    },
+                    {
+                        urls: 'turn:openrelay.metered.ca:443',
+                        username: 'openrelayproject',
+                        credential: 'openrelayproject'
+                    },
+                    {
+                        urls: 'turn:openrelay.metered.ca:443?transport=tcp',
+                        username: 'openrelayproject',
+                        credential: 'openrelayproject'
+                    }
+                ]
+            },
+            debug: 1
+        };
+
         function goToModeSelection() {
             if (timerInterval) clearInterval(timerInterval);
             isGameActive = false;
@@ -1863,7 +1899,7 @@
 
             if (isOnlineHost) {
                 const roomPeerId = getRoomPeerId();
-                onlinePeer = new Peer(roomPeerId);
+                onlinePeer = new Peer(roomPeerId, PEER_ICE_CONFIG);
                 
                 onlinePeer.on('open', id => {
                     onlinePeerId = id;
@@ -1871,6 +1907,7 @@
                 });
 
                 onlinePeer.on('connection', conn => {
+                    console.log('[XO Online] Incoming connection attempt from', conn.peer);
                     // A single browser should only occupy one slot.
                     if (onlineHostConnections.has(conn.peer) || players.some(p => p.peerId === conn.peer)) {
                         try { conn.send({ type: 'join-denied', reason: 'การเชื่อมต่อนี้เข้าห้องอยู่แล้ว' }); } catch (e) {}
@@ -1878,8 +1915,23 @@
                         return;
                     }
 
+                    // If signaling succeeds but the data channel never actually opens
+                    // (common when a TURN relay is needed and unreachable), fail this
+                    // pending join instead of leaving the slot silently stuck forever.
+                    const joinTimeout = setTimeout(() => {
+                        if (!conn.open) {
+                            console.warn('[XO Online] Connection from', conn.peer, 'never opened - closing.');
+                            try { conn.close(); } catch (e) {}
+                        }
+                    }, 12000);
+
+                    conn.on('open', () => {
+                        clearTimeout(joinTimeout);
+                        console.log('[XO Online] Data channel open with', conn.peer);
+                    });
                     conn.on('data', data => handleHostPeerMessage(conn, data));
-                    conn.on('error', () => {
+                    conn.on('error', (err) => {
+                        console.error('[XO Online] Connection error with', conn.peer, err);
                         onlineHostConnections.delete(conn.peer);
                     });
                     conn.on('close', () => {
@@ -1899,6 +1951,7 @@
                 });
 
                 onlinePeer.on('error', err => {
+                    console.error('[XO Online] Host peer error:', err);
                     if (err.type === 'unavailable-id') {
                         alert('เลขห้องนี้มีผู้ใช้งานอยู่แล้ว กรุณาสุ่มเลขห้องใหม่');
                         goToModeSelection();
@@ -1907,7 +1960,7 @@
                     }
                 });
             } else {
-                onlinePeer = new Peer();
+                onlinePeer = new Peer(PEER_ICE_CONFIG);
                 
                 onlinePeer.on('open', id => {
                     onlinePeerId = id;
@@ -1930,10 +1983,12 @@
 
                     conn.on('data', handleGuestPeerMessage);
                     conn.on('close', () => { 
+                        console.warn('[XO Online] Connection to host closed.');
                         alert('การเชื่อมต่อกับ Host ขาดหาย หรือ Host ปิดห้อง'); 
                         goToModeSelection(); 
                     });
                     conn.on('error', (err) => {
+                        console.error('[XO Online] Guest connection error:', err);
                         alert('ไม่สามารถเชื่อมต่อไปยังห้องได้ กรุณาตรวจสอบเลขห้องและรหัสผ่านอีกครั้ง');
                     });
 
@@ -1947,6 +2002,7 @@
                 });
 
                 onlinePeer.on('error', err => {
+                    console.error('[XO Online] Guest peer error:', err);
                     if (err.type === 'peer-unavailable') {
                         alert('ไม่พบห้องเลขที่ระบุนี้ หรือ Host ยังไม่ได้เปิดห้อง');
                     }
