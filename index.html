@@ -208,6 +208,79 @@
             border: 2px solid #3B2414;
         }
 
+        /* --- PLAYER COLOR PICKER --- */
+        .color-picker-trigger {
+            min-width: 92px;
+            background: #FAF4E8;
+            border: 2px solid #5C3A21;
+            color: #3B2414;
+        }
+
+        .color-swatch {
+            width: 42px;
+            height: 42px;
+            border: 3px solid #5C3A21;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: transform .12s ease, box-shadow .12s ease, border-color .12s ease;
+        }
+
+        .color-swatch:hover {
+            transform: translateY(-2px) scale(1.04);
+            box-shadow: 0 3px 0 rgba(59,36,20,.35);
+        }
+
+        .color-swatch.selected {
+            border-color: #FCA800 !important;
+            box-shadow: 0 0 0 3px #3B2414, 0 0 0 6px #FCA800;
+            transform: scale(1.04);
+        }
+
+        #display-online-room-code.room-code-display {
+            color: #3B2414 !important;
+            background: #F3E6C8;
+            border: 2px solid #8A5A36;
+            padding: 0 8px;
+            line-height: 1;
+        }
+
+        #display-online-room-pass.room-pass-display {
+            color: #185E5A !important;
+            background: #E4F5F1;
+            border: 2px solid #40B9B0;
+            padding: 0 7px;
+            line-height: 1.15;
+        }
+
+        body.night-mode .color-picker-trigger {
+            background: #161B26;
+            border-color: #38455E;
+            color: #F0F4F8;
+        }
+
+        body.night-mode .color-swatch {
+            border-color: #38455E;
+        }
+
+        body.night-mode .color-swatch.selected {
+            border-color: #40D3CA !important;
+            box-shadow: 0 0 0 3px #132B33, 0 0 0 6px #40D3CA;
+        }
+
+        body.night-mode #display-online-room-code.room-code-display {
+            color: #FFD269 !important;
+            background: #2A2418;
+            border-color: #8A5A36;
+        }
+
+        body.night-mode #display-online-room-pass.room-pass-display {
+            color: #89FFF8 !important;
+            background: #132B33;
+            border-color: #40D3CA;
+        }
+
         .pulse-editing {
             animation: pulse-edit-glow 1.2s infinite alternate;
         }
@@ -607,9 +680,13 @@
                             </button>
                             <input type="hidden" id="host-symbol" value="⛏️">
                             
-                            <select id="host-color-select" class="flex-1 px-2 py-2 text-xs font-bold">
-                                <!-- Rendered dynamically -->
-                            </select>
+                            <button type="button" id="host-color-btn" onclick="openColorPickerForHost()"
+                                class="color-picker-trigger flex-1 px-2 py-2 text-xs font-bold flex items-center justify-center gap-2">
+                                <span id="host-color-dot" class="w-5 h-5 inline-block border-2 border-black"></span>
+                                <span id="host-color-name">Emerald</span>
+                                <i class="fas fa-chevron-right text-[9px] opacity-60"></i>
+                            </button>
+                            <input type="hidden" id="host-color-select" value="0">
                         </div>
                     </div>
                 </div>
@@ -649,9 +726,13 @@
                             </button>
                             <input type="hidden" id="join-modal-symbol" value="🗡️">
                             
-                            <select id="join-modal-color-select" class="flex-1 px-2 py-2 text-xs font-bold">
-                                <!-- Rendered dynamically -->
-                            </select>
+                            <button type="button" id="join-color-btn" onclick="openColorPickerForJoin()"
+                                class="color-picker-trigger flex-1 px-2 py-2 text-xs font-bold flex items-center justify-center gap-2">
+                                <span id="join-color-dot" class="w-5 h-5 inline-block border-2 border-black"></span>
+                                <span id="join-color-name">Diamond</span>
+                                <i class="fas fa-chevron-right text-[9px] opacity-60"></i>
+                            </button>
+                            <input type="hidden" id="join-modal-color-select" value="1">
                         </div>
                     </div>
                 </div>
@@ -673,13 +754,13 @@
                         <div class="text-[11px] font-bold opacity-80 uppercase tracking-wider">ห้องรอออนไลน์ (ONLINE LOBBY)</div>
                         <h2 class="text-xl sm:text-2xl font-bold flex items-center gap-2">
                             <span>เลขห้อง:</span>
-                            <span id="display-online-room-code" class="text-[#FCA800] font-pixel text-3xl tracking-widest">4829</span>
+                            <span id="display-online-room-code" class="room-code-display font-pixel text-3xl tracking-widest">4829</span>
                         </h2>
                     </div>
 
                     <div class="text-right">
                         <div class="text-[11px] font-bold opacity-80">PASSWORD</div>
-                        <div id="display-online-room-pass" class="font-pixel text-xl text-[#40D3CA] tracking-wider">1234</div>
+                        <div id="display-online-room-pass" class="room-pass-display font-pixel text-xl tracking-wider">1234</div>
                     </div>
                 </div>
 
@@ -800,6 +881,26 @@
                     </button>
                 </div>
 
+            </div>
+        </div>
+
+        <!-- COLOR PICKER MODAL -->
+        <div id="color-picker-modal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 bg-black/70 backdrop-blur-xs">
+            <div class="mc-card max-w-md w-full p-4 shadow-2xl">
+                <div class="flex items-center justify-between mb-3 pb-2 border-b-2 border-[#5C3A21]">
+                    <h3 class="text-xs sm:text-sm font-bold flex items-center gap-1.5">
+                        <span>🎨</span> เลือกสีประจำตัวสำหรับ <span id="color-picker-player-name" class="text-[#557A2B]">ผู้เล่น</span>
+                    </h3>
+                    <button type="button" onclick="closeColorPicker()" class="bg-[#8A5A36] text-white px-2 py-0.5 border border-[#3B2414]">
+                        <i class="fas fa-times text-xs"></i>
+                    </button>
+                </div>
+                <div id="color-grid" class="grid grid-cols-4 sm:grid-cols-6 gap-3 p-3 bg-black/10 border-2 border-[#5C3A21]">
+                    <!-- Dynamic color buttons -->
+                </div>
+                <div class="mt-3 text-center text-[10px] opacity-70">
+                    เลือกสีที่ต้องการ สีที่ซ้ำกับเพื่อนจะมีการแจ้งเตือนในห้องรอ
+                </div>
             </div>
         </div>
 
@@ -987,12 +1088,18 @@
         }
 
         const COLOR_OPTIONS = [
-            { name: "🟩 Emerald (เขียว)", bgClass: "bg-[#557A2B]", textClass: "text-[#2F4518]", borderClass: "border-[#80B342]", pitch: 0.9 },
-            { name: "💎 Diamond (ฟ้า)", bgClass: "bg-[#40D3CA]", textClass: "text-[#185E5A]", borderClass: "border-[#89FFF8]", pitch: 1.2 },
-            { name: "🟧 Gold (ส้มทอง)", bgClass: "bg-[#FCA800]", textClass: "text-[#6E4900]", borderClass: "border-[#FFD269]", pitch: 1.1 },
-            { name: "🟥 Redstone (แดง)", bgClass: "bg-[#E53935]", textClass: "text-[#68100E]", borderClass: "border-[#FF7976]", pitch: 1.3 },
-            { name: "🟪 Obsidian (ม่วง)", bgClass: "bg-[#7E57C2]", textClass: "text-[#36215A]", borderClass: "border-[#B388FF]", pitch: 1.0 },
-            { name: "🟫 Oak Wood (น้ำตาล)", bgClass: "bg-[#8A5A36]", textClass: "text-[#3B2414]", borderClass: "border-[#C48E66]", pitch: 0.85 }
+            { name: "🟩 Emerald", color: "#557A2B", bgClass: "bg-[#557A2B]", textClass: "text-[#2F4518]", borderClass: "border-[#80B342]", pitch: 0.9 },
+            { name: "💎 Diamond", color: "#40D3CA", bgClass: "bg-[#40D3CA]", textClass: "text-[#185E5A]", borderClass: "border-[#89FFF8]", pitch: 1.2 },
+            { name: "🟧 Gold", color: "#FCA800", bgClass: "bg-[#FCA800]", textClass: "text-[#6E4900]", borderClass: "border-[#FFD269]", pitch: 1.1 },
+            { name: "🟥 Redstone", color: "#E53935", bgClass: "bg-[#E53935]", textClass: "text-[#68100E]", borderClass: "border-[#FF7976]", pitch: 1.3 },
+            { name: "🟪 Amethyst", color: "#7E57C2", bgClass: "bg-[#7E57C2]", textClass: "text-[#36215A]", borderClass: "border-[#B388FF]", pitch: 1.0 },
+            { name: "🟫 Oak", color: "#8A5A36", bgClass: "bg-[#8A5A36]", textClass: "text-[#3B2414]", borderClass: "border-[#C48E66]", pitch: 0.85 },
+            { name: "🟦 Lapis", color: "#3568B8", bgClass: "bg-[#3568B8]", textClass: "text-[#163568]", borderClass: "border-[#78A7F0]", pitch: 1.15 },
+            { name: "🩷 Pink", color: "#E85D9E", bgClass: "bg-[#E85D9E]", textClass: "text-[#6B123F]", borderClass: "border-[#FFB1D3]", pitch: 1.05 },
+            { name: "🟨 Lemon", color: "#D9C83F", bgClass: "bg-[#D9C83F]", textClass: "text-[#514900]", borderClass: "border-[#FFF19A]", pitch: 1.25 },
+            { name: "🟫 Copper", color: "#C86B3C", bgClass: "bg-[#C86B3C]", textClass: "text-[#5A2510]", borderClass: "border-[#F2A47E]", pitch: 0.95 },
+            { name: "⬜ Quartz", color: "#E8E0D5", bgClass: "bg-[#E8E0D5]", textClass: "text-[#4A4036]", borderClass: "border-[#FFFFFF]", pitch: 1.35 },
+            { name: "⬛ Coal", color: "#3B4252", bgClass: "bg-[#3B4252]", textClass: "text-[#1B202A]", borderClass: "border-[#78839A]", pitch: 0.8 }
         ];
 
         const MC_SYMBOLS = [
@@ -1038,6 +1145,9 @@
         let isPickingForJoin = false;
         let isPickingForOnlineLobby = false;
         let onlineLobbyPickingSlot = null;
+        let currentColorPickingMode = null; // 'host' | 'join' | 'onlineLobby' | 'local'
+        let currentColorPickingPlayerIdx = null;
+        let currentColorIndex = 0;
         let currentIconList = ALL_SYMBOLS;
         let iconCurrentPage = 0;
         const ICONS_PER_PAGE = 24;
@@ -1224,7 +1334,7 @@
 
                 let chosenColor = parseInt(colorSelect.value);
                 if (usedColors.has(chosenColor)) {
-                    chosenColor = [0,1,2,3,4,5].find(c => !usedColors.has(c)) ?? idx;
+                    chosenColor = Array.from({ length: COLOR_OPTIONS.length }, (_, c) => c).find(c => !usedColors.has(c)) ?? (idx % COLOR_OPTIONS.length);
                     colorSelect.value = chosenColor;
                 }
                 usedColors.add(chosenColor);
@@ -1413,7 +1523,96 @@
             closeIconPicker();
         }
 
-        function updatePlayerColorPreview(playerIdx) {
+        function openColorPickerForHost() {
+            currentColorPickingMode = 'host';
+            currentColorPickingPlayerIdx = null;
+            currentColorIndex = parseInt(document.getElementById('host-color-select')?.value) || 0;
+            const name = document.getElementById('host-player-name')?.value.trim() || 'Host Master';
+            openColorPickerModal(name);
+        }
+
+        function openColorPickerForJoin() {
+            currentColorPickingMode = 'join';
+            currentColorPickingPlayerIdx = null;
+            currentColorIndex = parseInt(document.getElementById('join-modal-color-select')?.value) || 1;
+            const name = document.getElementById('join-modal-player-name')?.value.trim() || 'Guest Player';
+            openColorPickerModal(name);
+        }
+
+        function openColorPickerInOnlineLobby(slotIdx) {
+            sound.playTick();
+            currentColorPickingMode = 'onlineLobby';
+            currentColorPickingPlayerIdx = slotIdx;
+            currentColorIndex = parseInt(players[slotIdx]?.colorIndex) || 0;
+            const p = players[slotIdx];
+            if (p) updateMyOnlineStatus({ isEditing: true });
+            openColorPickerModal(p?.name || 'ของคุณ');
+        }
+
+        function openColorPickerModal(playerName) {
+            const modal = document.getElementById('color-picker-modal');
+            const nameEl = document.getElementById('color-picker-player-name');
+            if (nameEl) nameEl.textContent = playerName;
+            renderColorGrid();
+            modal?.classList.remove('hidden');
+        }
+
+        function closeColorPicker() {
+            document.getElementById('color-picker-modal')?.classList.add('hidden');
+            if (currentColorPickingMode === 'onlineLobby') {
+                updateMyOnlineStatus({ isEditing: false });
+            }
+            currentColorPickingMode = null;
+            currentColorPickingPlayerIdx = null;
+        }
+
+        function renderColorGrid() {
+            const grid = document.getElementById('color-grid');
+            if (!grid) return;
+            grid.innerHTML = '';
+
+            COLOR_OPTIONS.forEach((c, idx) => {
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = `color-swatch ${idx === currentColorIndex ? 'selected' : ''} ${c.bgClass}`;
+                btn.title = c.name;
+                btn.innerHTML = `<span class="text-white text-xs font-bold drop-shadow">${idx + 1}</span>`;
+                btn.onclick = () => selectPlayerColor(idx);
+                grid.appendChild(btn);
+            });
+        }
+
+        function updateColorTrigger(prefix, colorIndex) {
+            const idx = ((parseInt(colorIndex) || 0) + COLOR_OPTIONS.length) % COLOR_OPTIONS.length;
+            const theme = COLOR_OPTIONS[idx];
+            const dot = document.getElementById(`${prefix}-color-dot`);
+            const name = document.getElementById(`${prefix}-color-name`);
+            if (dot) dot.className = `w-5 h-5 inline-block border-2 border-black ${theme.bgClass}`;
+            if (name) name.textContent = theme.name;
+        }
+
+        function selectPlayerColor(colorIndex) {
+            currentColorIndex = colorIndex;
+            const theme = COLOR_OPTIONS[colorIndex];
+
+            if (currentColorPickingMode === 'host') {
+                document.getElementById('host-color-select').value = colorIndex;
+                updateColorTrigger('host', colorIndex);
+            } else if (currentColorPickingMode === 'join') {
+                document.getElementById('join-modal-color-select').value = colorIndex;
+                updateColorTrigger('join', colorIndex);
+            } else if (currentColorPickingMode === 'onlineLobby' && currentColorPickingPlayerIdx !== null) {
+                updateMyOnlineStatus({ colorIndex, isEditing: false });
+            } else if (currentColorPickingMode === 'local' && currentColorPickingPlayerIdx !== null) {
+                const select = document.getElementById(`p-color-${currentColorPickingPlayerIdx}`);
+                if (select) select.value = colorIndex;
+                updatePlayerColorPreview(currentColorPickingPlayerIdx);
+            }
+
+            closeColorPicker();
+        }
+
+                function updatePlayerColorPreview(playerIdx) {
             const colorSelect = document.getElementById(`p-color-${playerIdx}`);
             if (!colorSelect) return;
             const colorIndex = parseInt(colorSelect.value) || 0;
@@ -1498,10 +1697,8 @@
             onlineRoomPass = roomPass;
             isOnlineHost = true;
 
-            const colorSelect = document.getElementById('host-color-select');
-            if (colorSelect) {
-                colorSelect.innerHTML = COLOR_OPTIONS.map((c, idx) => `<option value="${idx}">${c.name}</option>`).join('');
-            }
+            document.getElementById('host-color-select').value = '0';
+            updateColorTrigger('host', 0);
 
             document.getElementById('host-name-modal').classList.remove('hidden');
         }
@@ -1577,10 +1774,8 @@
             onlineRoomPass = roomPass;
             isOnlineHost = false;
 
-            const colorSelect = document.getElementById('join-modal-color-select');
-            if (colorSelect) {
-                colorSelect.innerHTML = COLOR_OPTIONS.map((c, idx) => `<option value="${idx}" ${idx === 1 ? 'selected' : ''}>${c.name}</option>`).join('');
-            }
+            document.getElementById('join-modal-color-select').value = '1';
+            updateColorTrigger('join', 1);
 
             document.getElementById('join-player-modal').classList.remove('hidden');
         }
@@ -1676,7 +1871,17 @@
                 });
 
                 onlinePeer.on('connection', conn => {
+                    // A single browser should only occupy one slot.
+                    if (onlineHostConnections.has(conn.peer) || players.some(p => p.peerId === conn.peer)) {
+                        try { conn.send({ type: 'join-denied', reason: 'การเชื่อมต่อนี้เข้าห้องอยู่แล้ว' }); } catch (e) {}
+                        setTimeout(() => { try { conn.close(); } catch (e) {} }, 200);
+                        return;
+                    }
+
                     conn.on('data', data => handleHostPeerMessage(conn, data));
+                    conn.on('error', () => {
+                        onlineHostConnections.delete(conn.peer);
+                    });
                     conn.on('close', () => {
                         onlineHostConnections.delete(conn.peer);
                         const idx = players.findIndex(p => p.peerId === conn.peer);
@@ -1729,8 +1934,16 @@
                         goToModeSelection(); 
                     });
                     conn.on('error', (err) => {
-                        alert('ไม่สามารถเชื่อมต่อไปยังห้องได้ ตรวจสอบเลขห้องและรหัสผ่านอีกครั้ง');
+                        alert('ไม่สามารถเชื่อมต่อไปยังห้องได้ กรุณาตรวจสอบเลขห้องและรหัสผ่านอีกครั้ง');
                     });
+
+                    // If signaling succeeds but the data channel never opens, fail clearly instead of hanging.
+                    setTimeout(() => {
+                        if (onlineHostConnection === conn && conn.open === false) {
+                            try { conn.close(); } catch (e) {}
+                            alert('เชื่อมต่อห้องไม่สำเร็จ กรุณาลองเข้าร่วมใหม่อีกครั้ง');
+                        }
+                    }, 12000);
                 });
 
                 onlinePeer.on('error', err => {
@@ -1757,14 +1970,16 @@
                     return;
                 }
 
+                // Reserve the slot immediately so simultaneous joins cannot claim the same slot.
                 const incoming = data.player || {};
-                const theme = COLOR_OPTIONS[(parseInt(incoming.colorIndex) || 0) % COLOR_OPTIONS.length];
+                const requestedColor = ((parseInt(incoming.colorIndex) || 0) + COLOR_OPTIONS.length) % COLOR_OPTIONS.length;
+                const theme = COLOR_OPTIONS[requestedColor];
                 
                 players[idx] = {
                     id: idx, 
                     name: String(incoming.name || `ผู้เล่น ${idx + 1}`).slice(0, 24), 
                     symbol: incoming.symbol || '🗡️',
-                    colorIndex: parseInt(incoming.colorIndex) || 0, 
+                    colorIndex: requestedColor, 
                     bgClass: theme.bgClass, 
                     textClass: theme.textClass,
                     borderClass: theme.borderClass, 
@@ -1780,6 +1995,7 @@
 
                 onlineHostConnections.set(conn.peer, conn);
                 conn.send({ type: 'join-accepted', slotIndex: idx, state: getOnlineGameState() });
+                try { conn.send({ type: 'join-ack', slotIndex: idx }); } catch (e) {}
                 broadcastRoomState();
                 renderOnlineSlots();
                 return;
@@ -1848,6 +2064,9 @@
                 players[myOnlineSlotIndex].textClass = theme.textClass;
                 players[myOnlineSlotIndex].borderClass = theme.borderClass;
                 players[myOnlineSlotIndex].pitch = theme.pitch;
+                if (currentColorPickingMode === 'onlineLobby') {
+                    currentColorIndex = cIdx;
+                }
             }
             if (updates.isReady !== undefined) players[myOnlineSlotIndex].isReady = !!updates.isReady;
             if (updates.isEditing !== undefined) players[myOnlineSlotIndex].isEditing = !!updates.isEditing;
@@ -1958,10 +2177,12 @@
                             </button>
 
                             <!-- Change Color Dropdown -->
-                            <select onchange="updateMyOnlineStatus({ colorIndex: this.value })" 
-                                class="px-2 py-1.5 text-xs font-bold border-2 border-[#5C3A21]">
-                                ${COLOR_OPTIONS.map((c, cIdx) => `<option value="${cIdx}" ${cIdx === p.colorIndex ? 'selected' : ''}>${c.name}</option>`).join('')}
-                            </select>
+                            <button type="button" onclick="openColorPickerInOnlineLobby(${idx})"
+                                class="color-picker-trigger px-2 py-1.5 text-xs font-bold flex items-center justify-center gap-1.5">
+                                <span class="w-4 h-4 inline-block border-2 border-black ${p.bgClass}"></span>
+                                <span>${COLOR_OPTIONS[p.colorIndex % COLOR_OPTIONS.length].name}</span>
+                                <i class="fas fa-chevron-right text-[8px] opacity-60"></i>
+                            </button>
 
                             <!-- Ready Button (Non-host only) -->
                             ${!p.isHost ? `
@@ -2076,6 +2297,10 @@
 
             // Check if players are editing or duplicate icons exist
             const activePlayers = players.filter(p => !p.isPlaceholder);
+            if (activePlayers.length < 2) {
+                alert('ต้องมีผู้เล่นอย่างน้อย 2 คนก่อนเริ่มการแข่งขัน');
+                return;
+            }
             const notReady = activePlayers.filter(p => !p.isHost && !p.isReady);
             if (notReady.length > 0) {
                 if (!confirm(`มีผู้เล่นอีก ${notReady.length} คนยังไม่ได้กด "พร้อม" คุณต้องการบังคับเริ่มเกมเลยหรือไม่?`)) {
@@ -2543,6 +2768,8 @@
         window.onload = function() {
             setLocalPlayerCount(4);
             updateWinCountOptions();
+            updateColorTrigger('host', 0);
+            updateColorTrigger('join', 1);
         };
     </script>
 </body>
